@@ -1,0 +1,23 @@
+{
+
+  "manifest_version": 2,
+  "name": "Localise Times",
+  "version": "1.0",
+
+  "description": "Detects times given with timezone abbreviations, and converts them to your local time.",
+
+  "icons": {
+    "48": "icons/icon_48.png",
+	"96": "icons/icon_96.png",
+	"192": "icons/icon_192.png"
+  },
+
+  "content_scripts": [
+    {
+      "matches": ["*://*/*"],
+	  "run_at": "document_end",
+      "js": ["localisetimes.js"]
+    }
+  ]
+
+}
