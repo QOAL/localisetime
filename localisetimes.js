@@ -110,7 +110,7 @@ function spotTime(str) {
 	Also the above with an offset at the end like: +/- X
 	*/
 	
-	let timeRegex = new RegExp('\\b([0-2]*[0-9])(:[0-9]{2})?(?: ?(am|pm))?(?: ?(' + tzaolStr + '))( ?(?:\\+|-) ?[0-9]{1,2})?\\b', 'gi');
+	let timeRegex = new RegExp('\\b([0-2]*[0-9])(:[0-5][0-9])?(?: ?(am|pm))?(?: ?(' + tzaolStr + '))( ?(?:\\+|-) ?[0-9]{1,2})?\\b', 'gi');
 	let matches = str.matchAll(timeRegex);
 
 	let timeInfo = [];
@@ -122,6 +122,7 @@ function spotTime(str) {
 		if (str.substr(match.index - 1, 1) == ":") { continue; }
 
 		let tHour = +match[1];
+		if (tHour > 23) { continue; } //Bail if we're going over a day
 		if (match[3]) {
 			tHour = (12 + tHour) % 12;
 			if (match[3].toLowerCase() == "pm") {
