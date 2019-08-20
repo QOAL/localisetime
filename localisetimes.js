@@ -1,6 +1,6 @@
 "use strict";
 //PHP spat these timezone abbreviations out, and their offsets - There could be some missing
-const tzaolObj = {"GMT":0,"EAT":180,"CET":60,"WAT":60,"CAT":120,"EET":120,"WEST":60,"WET":0,"CEST":120,"SAST":120,"HDT":-540,"HST":-600,"AKDT":-480,"AKST":-540,"AST":-240,"EST":-300,"CDT":-300,"CST":-360,"MDT":-360,"MST":-420,"PDT":-420,"PST":-480,"EDT":-240,"ADT":-180,"NDT":-90,"NST":-150,"NZST":720,"NZDT":780,"EEST":180,"HKT":480,"WIB":420,"WIT":540,"IDT":180,"IST":120,"PKT":300,"WITA":480,"KST":510,"JST":540,"ACST":570,"ACDT":630,"AEST":600,"AEDT":660,"AWST":480,"BST":60,"MSK":180,"SST":-660,"UTC":0,"PT":0,"ET":0};
+const tzaolObj = {"GMT":0,"EAT":180,"CET":60,"WAT":60,"CAT":120,"EET":120,"WEST":60,"WET":0,"CEST":120,"SAST":120,"HDT":-540,"HST":-600,"AKDT":-480,"AKST":-540,"AST":-240,"EST":-300,"CDT":-300,"CST":-360,"MDT":-360,"MST":-420,"PDT":-420,"PST":-480,"EDT":-240,"ADT":-180,"NDT":-90,"NST":-150,"NZST":720,"NZDT":780,"EEST":180,"HKT":480,"WIB":420,"WIT":540,"IDT":180,"IST":120,"PKT":300,"WITA":480,"KST":510,"JST":540,"ACST":570,"ACDT":630,"AEST":600,"AEDT":660,"AWST":480,"BST":60,"MSK":180,"SST":-660,"UTC":0,"PT":0,"ET":0,"MT":0,"CT":0};
 const tzaolStr = Object.keys(tzaolObj).join("|");
 
 function lookForTimes(node = document.body) {
@@ -91,6 +91,8 @@ function init() {
 	//Now we need to fill in the correct offset for PT/ET
 	tzaolObj["PT"] = dstAmerica ? tzaolObj["PDT"] : tzaolObj["PST"];
 	tzaolObj["ET"] = dstAmerica ? tzaolObj["EDT"] : tzaolObj["EST"];
+	tzaolObj["CT"] = dstAmerica ? tzaolObj["CDT"] : tzaolObj["CST"];
+	tzaolObj["MT"] = dstAmerica ? tzaolObj["MDT"] : tzaolObj["MST"];
 	//
 
 	//Give the page a once over now it has loaded
@@ -151,10 +153,8 @@ function spotTime(str) {
 	NN:NN APM TZ
 	Also the above with an offset at the end like: +/- X
 	*/
-
-	//(?:a|p)\.?m\.? could be written as a\.?m\.?|p\.?m\.?
 	
-	let timeRegex = new RegExp('\\b([0-2]*[0-9])(:[0-5][0-9])?(?: ?((?:a|p)\.?m\.?))?(?: ?(' + tzaolStr + '))( ?(?:\\+|-) ?[0-9]{1,2})?\\b', 'gi');
+	let timeRegex = new RegExp('\\b([0-2]*[0-9])(:[0-5][0-9])?(?: ?([ap](?:\.?m\.?)?))?(?: ?(' + tzaolStr + '))( ?(?:\\+|-) ?[0-9]{1,2})?\\b', 'gi');
 	let matches = str.matchAll(timeRegex);
 
 	let timeInfo = [];
@@ -169,7 +169,7 @@ function spotTime(str) {
 		if (tHour > 23) { continue; } //Bail if we're going over a day
 		if (match[3]) {
 			tHour = (12 + tHour) % 12;
-			if (match[3].toLowerCase() == "pm") {
+			if (match[3][0].toLowerCase() == 'p') {
 				tHour += 12;
 			}
 		}
