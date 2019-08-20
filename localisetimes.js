@@ -1,6 +1,6 @@
 "use strict";
 //PHP spat these timezone abbreviations out, and their offsets - There could be some missing
-const tzaolObj = {"GMT":0,"EAT":180,"CET":60,"WAT":60,"CAT":120,"EET":120,"WEST":60,"WET":0,"CEST":120,"SAST":120,"HDT":-540,"HST":-600,"AKDT":-480,"AKST":-540,"AST":-240,"EST":-300,"CDT":-300,"CST":-360,"MDT":-360,"MST":-420,"PDT":-420,"PST":-480,"EDT":-240,"ADT":-180,"NDT":-90,"NST":-150,"NZST":720,"NZDT":780,"EEST":180,"HKT":480,"WIB":420,"WIT":540,"IDT":180,"IST":120,"PKT":300,"WITA":480,"KST":510,"JST":540,"ACST":570,"ACDT":630,"AEST":600,"AEDT":660,"AWST":480,"BST":60,"MSK":180,"SST":-660,"UTC":0};
+const tzaolObj = {"GMT":0,"EAT":180,"CET":60,"WAT":60,"CAT":120,"EET":120,"WEST":60,"WET":0,"CEST":120,"SAST":120,"HDT":-540,"HST":-600,"AKDT":-480,"AKST":-540,"AST":-240,"EST":-300,"CDT":-300,"CST":-360,"MDT":-360,"MST":-420,"PDT":-420,"PST":-480,"EDT":-240,"ADT":-180,"NDT":-90,"NST":-150,"NZST":720,"NZDT":780,"EEST":180,"HKT":480,"WIB":420,"WIT":540,"IDT":180,"IST":120,"PKT":300,"WITA":480,"KST":510,"JST":540,"ACST":570,"ACDT":630,"AEST":600,"AEDT":660,"AWST":480,"BST":60,"MSK":180,"SST":-660,"UTC":0,"PT":0,"ET":0};
 const tzaolStr = Object.keys(tzaolObj).join("|");
 
 function lookForTimes(node = document.body) {
@@ -27,11 +27,15 @@ function lookForTimes(node = document.body) {
 
 				//Create a span to hold this converted time
 				let tmpTime = document.createElement("span");
+				tmpTime.style.cursor = "pointer"; //Indicate that it's interactive
 				tmpTime.style.borderBottom = "1px dotted currentColor"; //Modest styling that should fit in with any content
 				tmpTime.textContent = thisTime[0]; //Our converted time
 				//Let people mouse over the converted time to see what was actually written
 				tmpTime.setAttribute("title", 'Converted to your local time from "' + thisTime[1] + '"');
+				tmpTime.setAttribute("data-localised", thisTime[0]); //Used when toggling
+				tmpTime.setAttribute("data-original", thisTime[1]); //Used when toggling
 				tmpFrag.appendChild(tmpTime);
+				tmpTime.addEventListener("click", toggleTime);
 
 				//Do we have any more times to worry about?
 				if (timeInfo[t + 1]) {
@@ -50,7 +54,45 @@ function lookForTimes(node = document.body) {
 		}
 	}
 }
+
+function toggleTime() {
+	//Change the displayed time to and from the localised and original time
+	if (!this || !this.hasAttribute("data-original") || !this.hasAttribute("data-localised")) {
+		return;
+	}
+	//Which state are we in?
+	if (this.getAttribute("data-original") == this.textContent) {
+		this.textContent = this.getAttribute("data-localised");
+		this.setAttribute("title", 'Converted to your local time from "' + this.getAttribute("data-original") + '"');
+	} else {
+		this.textContent = this.getAttribute("data-original");
+		this.setAttribute("title", 'Converted to your local time this is "' + this.getAttribute("data-localised") + '"');
+	}
+}
 function init() {
+	//Work out the DST dates for the USA as part
+	// of special casing for DST agnostic PT/ET
+	//So first we need to get those dates (We could hard code them)
+	const thisYear = new Date().getUTCFullYear();
+	let tmpDate = new Date(Date.UTC(thisYear, 2, 0));
+	//Work out the day
+	let tmpDay = ((6 - tmpDate.getDay()) + 7) % 7;
+	//2am on the second Sunday in March
+	const toDST = Date.UTC(thisYear, 2, tmpDay, 2);
+	//End of DST
+	tmpDate = new Date(Date.UTC(thisYear, 10, 0));
+	//Work out the day
+	tmpDay = (6 - tmpDate.getDay()) % 7;
+	//2am on the 1st Sunday in November
+	const fromDST = Date.UTC(thisYear, 10, tmpDay, 2);
+	//
+	const tmpNow = Date.now();
+	const dstAmerica = tmpNow >= toDST && tmpNow <= fromDST;
+	//Now we need to fill in the correct offset for PT/ET
+	tzaolObj["PT"] = dstAmerica ? tzaolObj["PDT"] : tzaolObj["PST"];
+	tzaolObj["ET"] = dstAmerica ? tzaolObj["EDT"] : tzaolObj["EST"];
+	//
+
 	//Give the page a once over now it has loaded
 	lookForTimes();
 
@@ -109,8 +151,10 @@ function spotTime(str) {
 	NN:NN APM TZ
 	Also the above with an offset at the end like: +/- X
 	*/
+
+	//(?:a|p)\.?m\.? could be written as a\.?m\.?|p\.?m\.?
 	
-	let timeRegex = new RegExp('\\b([0-2]*[0-9])(:[0-5][0-9])?(?: ?(am|pm))?(?: ?(' + tzaolStr + '))( ?(?:\\+|-) ?[0-9]{1,2})?\\b', 'gi');
+	let timeRegex = new RegExp('\\b([0-2]*[0-9])(:[0-5][0-9])?(?: ?((?:a|p)\.?m\.?))?(?: ?(' + tzaolStr + '))( ?(?:\\+|-) ?[0-9]{1,2})?\\b', 'gi');
 	let matches = str.matchAll(timeRegex);
 
 	let timeInfo = [];
