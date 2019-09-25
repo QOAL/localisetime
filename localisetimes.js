@@ -2,6 +2,7 @@
 //PHP spat these timezone abbreviations out, and their offsets - There could be some missing
 const tzaolObj = {"GMT":0,"EAT":180,"CET":60,"WAT":60,"CAT":120,"EET":120,"WEST":60,"WET":0,"CEST":120,"SAST":120,"HDT":-540,"HST":-600,"AKDT":-480,"AKST":-540,"AST":-240,"EST":-300,"CDT":-300,"CST":-360,"MDT":-360,"MST":-420,"PDT":-420,"PST":-480,"EDT":-240,"ADT":-180,"NDT":-90,"NST":-150,"NZST":720,"NZDT":780,"EEST":180,"HKT":480,"WIB":420,"WIT":540,"IDT":180,"IST":120,"PKT":300,"WITA":480,"KST":510,"JST":540,"ACST":570,"ACDT":630,"AEST":600,"AEDT":660,"AWST":480,"BST":60,"MSK":180,"SST":-660,"UTC":0,"PT":0,"ET":0,"MT":0,"CT":0};
 const tzaolStr = Object.keys(tzaolObj).join("|");
+const timeRegex = new RegExp('\\b([0-2]*[0-9])((:|\.)[0-5][0-9])?(?: ?([ap](?:\.?m\.?)?))?(?: ?(' + tzaolStr + '))( ?(?:\\+|-) ?[0-9]{1,2})?\\b', 'gi');
 
 function lookForTimes(node = document.body) {
 	//Walk the dom looking for text nodes
@@ -13,49 +14,51 @@ function lookForTimes(node = document.body) {
 		nodes.push(walker.currentNode);
 	}
 
+	const dateObj = new Date();
+
 	for(var i = 0; node=nodes[i] ; i++) {
 		//Look at each text node, and try and find valid times
-		let timeInfo = spotTime(node.nodeValue);
+		let timeInfo = spotTime(node.nodeValue, dateObj);
 		//We get an array back, if it has stuff in it then take action
-		if (timeInfo.length > 0) {
-			let tmpFrag = document.createDocumentFragment();
-			//Insert any text between the start of the string and the first time occurrence
-			tmpFrag.textContent = node.textContent.substr(0, timeInfo[0][2]);
-			//Go through each time we need to replace
-			for (let t = 0; t < timeInfo.length; t++) {
-				let thisTime = timeInfo[t];
+		if (timeInfo.length === 0) { continue }
 
-				//Create a span to hold this converted time
-				let tmpTime = document.createElement("span");
-				tmpTime.style.cursor = "pointer"; //Indicate that it's interactive
-				tmpTime.style.borderBottom = "1px dotted currentColor"; //Modest styling that should fit in with any content
-				tmpTime.textContent = thisTime[0]; //Our converted time
-				//Let people mouse over the converted time to see what was actually written
-				tmpTime.setAttribute("title", 'Converted to your local time from "' + thisTime[1] + '"');
-				tmpTime.setAttribute("data-localised", thisTime[0]); //Used when toggling
-				tmpTime.setAttribute("data-original", thisTime[1]); //Used when toggling
-				tmpFrag.appendChild(tmpTime);
-				tmpTime.addEventListener("click", toggleTime);
+		let tmpFrag = document.createDocumentFragment();
+		//Insert any text between the start of the string and the first time occurrence
+		tmpFrag.textContent = node.textContent.substr(0, timeInfo[0][2]);
+		//Go through each time we need to replace
+		for (let t = 0; t < timeInfo.length; t++) {
+			let thisTime = timeInfo[t];
 
-				//Do we have any more times to worry about?
-				if (timeInfo[t + 1]) {
-					//Yes
-					//Insert a text node containing all the text between the end of the current time and the start of the next one
-					tmpFrag.appendChild(document.createTextNode(node.textContent.substring(thisTime[2] + thisTime[3], timeInfo[t + 1][2])));
-				} else {
-					//No
-					//Fill in the remaining text
-					tmpFrag.appendChild(document.createTextNode(node.textContent.substring(thisTime[2] + thisTime[3])));
-				}
+			//Create a span to hold this converted time
+			let tmpTime = document.createElement("span");
+			tmpTime.style.cursor = "pointer"; //Indicate that it's interactive
+			tmpTime.style.borderBottom = "1px dotted currentColor"; //Modest styling that should fit in with any content
+			tmpTime.textContent = thisTime[0]; //Our converted time
+			//Let people mouse over the converted time to see what was actually written
+			tmpTime.setAttribute("title", 'Converted to your local time from "' + thisTime[1] + '"');
+			tmpTime.setAttribute("data-localised", thisTime[0]); //Used when toggling
+			tmpTime.setAttribute("data-original", thisTime[1]); //Used when toggling
+			tmpFrag.appendChild(tmpTime);
+			tmpTime.addEventListener("click", toggleTime);
 
+			//Do we have any more times to worry about?
+			if (timeInfo[t + 1]) {
+				//Yes
+				//Insert a text node containing all the text between the end of the current time and the start of the next one
+				tmpFrag.appendChild(document.createTextNode(node.textContent.substring(thisTime[2] + thisTime[3], timeInfo[t + 1][2])));
+			} else {
+				//No
+				//Fill in the remaining text
+				tmpFrag.appendChild(document.createTextNode(node.textContent.substring(thisTime[2] + thisTime[3])));
 			}
-			//replace the old text node with our mangled one
-			node.parentElement.replaceChild(tmpFrag, node);
+
 		}
+		//replace the old text node with our mangled one
+		node.parentElement.replaceChild(tmpFrag, node);
 	}
 }
 
-function toggleTime() {
+function toggleTime(e) {
 	//Change the displayed time to and from the localised and original time
 	if (!this || !this.hasAttribute("data-original") || !this.hasAttribute("data-localised")) {
 		return;
@@ -68,6 +71,9 @@ function toggleTime() {
 		this.textContent = this.getAttribute("data-original");
 		this.setAttribute("title", 'Converted to your local time this is "' + this.getAttribute("data-localised") + '"');
 	}
+
+	//Stop any other events from firing (handy if this node is in a link)
+	e.preventDefault();
 }
 function init() {
 	//Work out the DST dates for the USA as part
@@ -125,7 +131,7 @@ function handleMutations(mutationsList, observer) {
 init();
 
 
-function spotTime(str) {
+function spotTime(str, dateObj) {
 	/*
 		A well thought out version of this would take into account for info
 		Such as words used in the tweet which might imply a date
@@ -154,39 +160,49 @@ function spotTime(str) {
 	Also the above with an offset at the end like: +/- X
 	*/
 	
-	let timeRegex = new RegExp('\\b([0-2]*[0-9])(:[0-5][0-9])?(?: ?([ap](?:\.?m\.?)?))?(?: ?(' + tzaolStr + '))( ?(?:\\+|-) ?[0-9]{1,2})?\\b', 'gi');
+	//let timeRegex = new RegExp('\\b([0-2]*[0-9])((:|\.)[0-5][0-9])?(?: ?([ap](?:\.?m\.?)?))?(?: ?(' + tzaolStr + '))( ?(?:\\+|-) ?[0-9]{1,2})?\\b', 'gi');
 	let matches = str.matchAll(timeRegex);
+
+	/*Groups:
+		Full time string,
+		Hours,
+		Minutes including separator,
+		Hour/minute separator,
+		am/pm ,
+		TimezoneAbr,
+		Offset
+	*/
 
 	let timeInfo = [];
 	for (const match of matches) {
 		//Check that we have a match, with a valid timezone.
-		if (!match[4] || typeof tzaolObj[match[4].toUpperCase()] == "undefined") { continue; }
+		if (!match[5] || typeof tzaolObj[match[5].toUpperCase()] == "undefined") { continue; }
 		//We need to change the start of the regex to... maybe (^|\s)
 		//The issue here is that : matches the word boundary, and if the input is "30:00 gmt" then it'll match "00 gmt"
-		if (str.substr(match.index - 1, 1) == ":") { continue; }
+		//if (str.substr(match.index - 1, 1) == ":") { continue; }
+		if (str[0] === ":" || str[0] === ".") { continue }
 
 		let tHour = +match[1];
 		if (tHour > 23) { continue; } //Bail if we're going over a day
-		if (match[3]) {
+		if (match[4]) {
 			tHour = (12 + tHour) % 12;
-			if (match[3][0].toLowerCase() == 'p') {
+			if (match[4][0].toLowerCase() == 'p') {
 				tHour += 12;
 			}
 		}
 		let tMins = (match[2] ? match[2] : ':00');
-		let tMinsFromMidnight = h2m(tHour + tMins);
+		let tMinsFromMidnight = h2m(tHour + tMins, match[3]);
 		let hourOffset = 0;
 		//Sometimes people write a tz and then +X (like UTC+1)
-		if (match[5]) {
-			hourOffset = +(match[5].replace(/\s/g, '')) * 60;
+		if (match[6]) {
+			hourOffset = +(match[6].replace(/\s/g, '')) * 60;
 		}
-		let tCorrected = tMinsFromMidnight - tzaolObj[match[4].toUpperCase()] + hourOffset;
-		tCorrected -= new Date().getTimezoneOffset();
+		let tCorrected = tMinsFromMidnight - tzaolObj[match[5].toUpperCase()] + hourOffset;
+		tCorrected -= dateObj.getTimezoneOffset();
 
 		//Build the localised time
-		let tmpDate = new Date();
 		let tmpExplode = m2h(tCorrected).split(":");
-		tmpDate = new Date(tmpDate.getFullYear(), tmpDate.getMonth(), tmpDate.getDay(), tmpExplode[0], tmpExplode[1]);
+		let tmpDate = new Date(dateObj.getFullYear(), dateObj.getMonth(), dateObj.getDay(), tmpExplode[0], tmpExplode[1]);
 		let localeTimeString = tmpDate.toLocaleTimeString([], {hour: 'numeric', minute: 'numeric'});
 
 		//Store the localised time, the time that we matched, its offset and length
@@ -205,8 +221,8 @@ function m2h(mins) {
 	var tmp = h + ":" + m;
 	return tmp;
 }
-function h2m(hours) {
-	var t = (String)(hours).split(':');
+function h2m(hours, separator = ':') {
+	var t = (String)(hours).split(separator);
 	var tmp = (t[0] * 60) + +t[1];
 	return tmp;
 }
