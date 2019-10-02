@@ -2,7 +2,35 @@
 //PHP spat these timezone abbreviations out, and their offsets - There could be some missing
 const tzaolObj = {"GMT":0,"EAT":180,"CET":60,"WAT":60,"CAT":120,"EET":120,"WEST":60,"WET":0,"CEST":120,"SAST":120,"HDT":-540,"HST":-600,"AKDT":-480,"AKST":-540,"AST":-240,"EST":-300,"CDT":-300,"CST":-360,"MDT":-360,"MST":-420,"PDT":-420,"PST":-480,"EDT":-240,"ADT":-180,"NDT":-90,"NST":-150,"NZST":720,"NZDT":780,"EEST":180,"HKT":480,"WIB":420,"WIT":540,"IDT":180,"IST":120,"PKT":300,"WITA":480,"KST":510,"JST":540,"ACST":570,"ACDT":630,"AEST":600,"AEDT":660,"AWST":480,"BST":60,"MSK":180,"SST":-660,"UTC":0,"PT":0,"ET":0,"MT":0,"CT":0};
 const tzaolStr = Object.keys(tzaolObj).join("|");
-const timeRegex = new RegExp('\\b([0-2]*[0-9])((:|\.)[0-5][0-9])?(?: ?([ap](?:\.?m\.?)?))?(?: ?(' + tzaolStr + '))( ?(?:\\+|-) ?[0-9]{1,2})?\\b', 'gi');
+//const timeRegex = new RegExp('\\b([0-2]*[0-9])((:|\.)[0-5][0-9])?(?: ?([ap](?:\.?m\.?)?))?(?: ?(' + tzaolStr + '))( ?(?:\\+|-) ?[0-9]{1,2})?\\b', 'gi');
+const timeRegex = new RegExp('\\b(?:([0-2]?[0-9])((:|\.)[0-5][0-9])?(:[0-5][0-9])?(?: ?([ap](?:.?m.?)?))? ?[-|\\u{8211}|\\u{8212}|\\u{8213}] ?\\b)?([0-2]?[0-9])((:|\.)[0-5][0-9])?(:[0-5][0-9])?(?: ?([ap](?:\.?m\.?)?))?(?: ?(' + tzaolStr + '))( ?(?:\\+|-) ?[0-9]{1,2})?\\b', 'giu');
+
+//Match group enumeration
+const _G = {
+	fullStr: 0,
+
+	startHour: 1,
+	startMinsInSep: 2,
+	startSeparator: 3,
+	startSeconds: 4,
+	startMeridiem: 5,
+
+	hours: 6,
+	minsIncSep: 7,
+	separator: 8,
+	seconds: 9,
+	meridiem: 10,
+	tzAbr: 11,
+	offset: 12
+};
+/*
+	hours: 1,
+	minsIncSep: 2,
+	separator: 3,
+	meridiem: 4,
+	tzAbr: 5,
+	offset: 6
+*/
 
 function lookForTimes(node = document.body) {
 	//Walk the dom looking for text nodes
@@ -20,7 +48,7 @@ function lookForTimes(node = document.body) {
 		//Look at each text node, and try and find valid times
 		let timeInfo = spotTime(node.nodeValue, dateObj);
 		//We get an array back, if it has stuff in it then take action
-		if (timeInfo.length === 0) { continue }
+		if (timeInfo.length === 0) { continue; }
 
 		let tmpFrag = document.createDocumentFragment();
 		//Insert any text between the start of the string and the first time occurrence
@@ -95,10 +123,10 @@ function init() {
 	const tmpNow = Date.now();
 	const dstAmerica = tmpNow >= toDST && tmpNow <= fromDST;
 	//Now we need to fill in the correct offset for PT/ET
-	tzaolObj["PT"] = dstAmerica ? tzaolObj["PDT"] : tzaolObj["PST"];
-	tzaolObj["ET"] = dstAmerica ? tzaolObj["EDT"] : tzaolObj["EST"];
-	tzaolObj["CT"] = dstAmerica ? tzaolObj["CDT"] : tzaolObj["CST"];
-	tzaolObj["MT"] = dstAmerica ? tzaolObj["MDT"] : tzaolObj["MST"];
+	tzaolObj.PT = dstAmerica ? tzaolObj.PDT : tzaolObj.PST;
+	tzaolObj.ET = dstAmerica ? tzaolObj.EDT : tzaolObj.EST;
+	tzaolObj.CT = dstAmerica ? tzaolObj.CDT : tzaolObj.CST;
+	tzaolObj.MT = dstAmerica ? tzaolObj.MDT : tzaolObj.MST;
 	//
 
 	//Give the page a once over now it has loaded
@@ -158,55 +186,106 @@ function spotTime(str, dateObj) {
 	NN:NN APM
 	NN:NN APM TZ
 	Also the above with an offset at the end like: +/- X
+	It's way more than this list now.
 	*/
-	
-	//let timeRegex = new RegExp('\\b([0-2]*[0-9])((:|\.)[0-5][0-9])?(?: ?([ap](?:\.?m\.?)?))?(?: ?(' + tzaolStr + '))( ?(?:\\+|-) ?[0-9]{1,2})?\\b', 'gi');
-	let matches = str.matchAll(timeRegex);
 
-	/*Groups:
-		Full time string,
-		Hours,
-		Minutes including separator,
-		Hour/minute separator,
-		am/pm ,
-		TimezoneAbr,
-		Offset
-	*/
+	let matches = str.matchAll(timeRegex);
 
 	let timeInfo = [];
 	for (const match of matches) {
 		//Check that we have a match, with a valid timezone.
-		if (!match[5] || typeof tzaolObj[match[5].toUpperCase()] == "undefined") { continue; }
+		if (!match[_G.tzAbr] || typeof tzaolObj[match[_G.tzAbr].toUpperCase()] == "undefined") { continue; }
 		//We need to change the start of the regex to... maybe (^|\s)
 		//The issue here is that : matches the word boundary, and if the input is "30:00 gmt" then it'll match "00 gmt"
 		//if (str.substr(match.index - 1, 1) == ":") { continue; }
-		if (str[0] === ":" || str[0] === ".") { continue }
+		if (str[0] === ":" || str[0] === ".") { continue; } //should this be fullStr instead of str?
 
-		let tHour = +match[1];
+		if (match[_G.tzAbr] === 'pt' && !(match[_G.meridiem] || match[_G.minsIncSep])) { continue; } //Temporary quirk to avoid matching font sizes
+
+		let tHour = +match[_G.hours];
+		if (tHour == 0 && !match[_G.minsIncSep]) { continue; } //Bail if the hour is 0 and we have no minutes. (We could assume midnight)
 		if (tHour > 23) { continue; } //Bail if we're going over a day
-		if (match[4]) {
+		if (match[_G.meridiem]) {
 			tHour = (12 + tHour) % 12;
-			if (match[4][0].toLowerCase() == 'p') {
+			if (match[_G.meridiem][0].toLowerCase() == 'p') {
 				tHour += 12;
 			}
 		}
-		let tMins = (match[2] ? match[2] : ':00');
-		let tMinsFromMidnight = h2m(tHour + tMins, match[3]);
+		let tMins = (match[_G.minsIncSep] ? match[_G.minsIncSep] : ':00');
+		let tMinsFromMidnight = h2m(tHour + tMins, match[_G.separator]);
 		let hourOffset = 0;
 		//Sometimes people write a tz and then +X (like UTC+1)
-		if (match[6]) {
-			hourOffset = +(match[6].replace(/\s/g, '')) * 60;
+		if (match[_G.offset]) {
+			hourOffset = +(match[_G.offset].replace(/\s/g, '')) * 60;
 		}
-		let tCorrected = tMinsFromMidnight - tzaolObj[match[5].toUpperCase()] + hourOffset;
+		let tCorrected = tMinsFromMidnight - tzaolObj[match[_G.tzAbr].toUpperCase()] + hourOffset;
 		tCorrected -= dateObj.getTimezoneOffset();
 
 		//Build the localised time
 		let tmpExplode = m2h(tCorrected).split(":");
-		let tmpDate = new Date(dateObj.getFullYear(), dateObj.getMonth(), dateObj.getDay(), tmpExplode[0], tmpExplode[1]);
-		let localeTimeString = tmpDate.toLocaleTimeString([], {hour: 'numeric', minute: 'numeric'});
+		let tmpDate = new Date(
+			dateObj.getFullYear(),
+			dateObj.getMonth(),
+			dateObj.getDay(),
+			tmpExplode[0],
+			tmpExplode[1],
+			match[_G.seconds] ? match[_G.seconds].substring(1) : 0
+		);
+		let localeTimeString = tmpDate.toLocaleTimeString(
+			[],
+			match[_G.seconds] ? {hour: 'numeric', minute: 'numeric', second: 'numeric'} : {hour: 'numeric', minute: 'numeric'}
+		);
+
+		let localeStartTimeString = '';
+		if (match[_G.startHour] && +match[_G.startHour] > 0 && +match[_G.startHour] < 24) {
+			//This is a time range
+			//Can we avoid duplicate code?
+			let startHour = +match[_G.startHour];
+			if (match[_G.startMinsInSep]) {
+				
+			}
+
+			if (match[_G.startMeridiem]) {
+				startHour = (12 + startHour) % 12;
+				if (match[_G.startMeridiem][0].toLowerCase() == 'p') {
+					startHour += 12;
+				}
+			} else if (match[_G.meridiem]) {
+				let tmpStartHour = (12 + startHour) % 12;
+				if (match[_G.meridiem][0].toLowerCase() == 'p') {
+					tmpStartHour += 12;
+				}
+				//Make sure we haven't just made the start time later than the end
+				if (tmpStartHour < tHour) {
+					startHour = tmpStartHour
+				}
+			}
+			//if (startHour > tHour) { console.warn("Invalid time range.", startHour, tHour); }
+			let startMins = (match[_G.startMinsInSep] ? match[_G.startMinsInSep] : ':00');
+			let startMinsFromMidnight = h2m(startHour + startMins, match[_G.startSeparator]);
+
+			let startCorrected = startMinsFromMidnight - tzaolObj[match[_G.tzAbr].toUpperCase()] + hourOffset;
+			startCorrected -= dateObj.getTimezoneOffset();
+
+			//Build the localised time
+			let tmpExplode = m2h(startCorrected).split(":");
+			let tmpDate = new Date(
+				dateObj.getFullYear(),
+				dateObj.getMonth(),
+				dateObj.getDay(),
+				tmpExplode[0],
+				tmpExplode[1],
+				match[_G.startSeconds] ? match[_G.startSeconds].substring(1) : 0
+			);
+			localeStartTimeString = tmpDate.toLocaleTimeString(
+				[],
+				match[_G.startSeconds] ? {hour: 'numeric', minute: 'numeric', second: 'numeric'} : {hour: 'numeric', minute: 'numeric'}
+			) + ' – ';
+			//Should we capture the user defined separator and reuse it?
+		}
 
 		//Store the localised time, the time that we matched, its offset and length
-		timeInfo.push([localeTimeString, match[0], match.index, match[0].length]);
+		timeInfo.push([localeStartTimeString + localeTimeString, match[_G.fullStr], match.index, match[_G.fullStr].length]);
 	}
 
 	return timeInfo;
