@@ -10,7 +10,7 @@ const _G = {
 	fullStr: 0,
 
 	startHour: 1,
-	startMinsInSep: 2,
+	startMinsIncSep: 2,
 	startSeparator: 3,
 	startSeconds: 4,
 	startMeridiem: 5,
@@ -196,9 +196,8 @@ function spotTime(str, dateObj) {
 		//Check that we have a match, with a valid timezone.
 		if (!match[_G.tzAbr] || typeof tzaolObj[match[_G.tzAbr].toUpperCase()] == "undefined") { continue; }
 		//We need to change the start of the regex to... maybe (^|\s)
-		//The issue here is that : matches the word boundary, and if the input is "30:00 gmt" then it'll match "00 gmt"
-		//if (str.substr(match.index - 1, 1) == ":") { continue; }
-		if (str[0] === ":" || str[0] === ".") { continue; } //should this be fullStr instead of str?
+		//The issue here is that : matches the word boundary, and if the input is "30:15 gmt" then it'll match "15 gmt"
+		if (str[match.index - 1] === ":" || str[match.index - 1] === ".") { continue; }
 
 		if (match[_G.tzAbr] === 'pt' && !(match[_G.meridiem] || match[_G.minsIncSep])) { continue; } //Temporary quirk to avoid matching font sizes
 
@@ -231,19 +230,22 @@ function spotTime(str, dateObj) {
 			tmpExplode[1],
 			match[_G.seconds] ? match[_G.seconds].substring(1) : 0
 		);
+		//Match the granularity of the output to the input
+		let timeFormat = { hour: 'numeric', minute: 'numeric' };
+		if (match[_G.seconds]) {
+			timeFormat.second = 'numeric';
+		}
 		let localeTimeString = tmpDate.toLocaleTimeString(
-			[],
-			match[_G.seconds] ? {hour: 'numeric', minute: 'numeric', second: 'numeric'} : {hour: 'numeric', minute: 'numeric'}
+			undefined, timeFormat
 		);
 
 		let localeStartTimeString = '';
-		if (match[_G.startHour] && +match[_G.startHour] > 0 && +match[_G.startHour] < 24) {
+		if (match[_G.startHour] && (+match[_G.startHour] > 0 && !match[_G.meridiem] && !match[_G.startMeridiem]) && +match[_G.startHour] < 24) {
+			//0 is only accepted as a start hour if no meridiems are used, so we're reasonably certain it's a 24hour time.
+
 			//This is a time range
 			//Can we avoid duplicate code?
 			let startHour = +match[_G.startHour];
-			if (match[_G.startMinsInSep]) {
-				
-			}
 
 			if (match[_G.startMeridiem]) {
 				startHour = (12 + startHour) % 12;
@@ -261,7 +263,7 @@ function spotTime(str, dateObj) {
 				}
 			}
 			//if (startHour > tHour) { console.warn("Invalid time range.", startHour, tHour); }
-			let startMins = (match[_G.startMinsInSep] ? match[_G.startMinsInSep] : ':00');
+			let startMins = (match[_G.startMinsIncSep] ? match[_G.startMinsIncSep] : ':00');
 			let startMinsFromMidnight = h2m(startHour + startMins, match[_G.startSeparator]);
 
 			let startCorrected = startMinsFromMidnight - tzaolObj[match[_G.tzAbr].toUpperCase()] + hourOffset;
@@ -277,9 +279,17 @@ function spotTime(str, dateObj) {
 				tmpExplode[1],
 				match[_G.startSeconds] ? match[_G.startSeconds].substring(1) : 0
 			);
+			//Match the granularity of the output to the input
+			let timeFormat = { hour: 'numeric' };
+			if (match[_G.startMinsIncSep]) {
+				timeFormat.minute = 'numeric';
+			}
+			if (match[_G.startSeconds]) {
+				timeFormat.second = 'numeric';
+			}
+			//It would be nice to avoid including the meridiem if it's the same as the main time
 			localeStartTimeString = tmpDate.toLocaleTimeString(
-				[],
-				match[_G.startSeconds] ? {hour: 'numeric', minute: 'numeric', second: 'numeric'} : {hour: 'numeric', minute: 'numeric'}
+				undefined, timeFormat
 			) + ' – ';
 			//Should we capture the user defined separator and reuse it?
 		}
