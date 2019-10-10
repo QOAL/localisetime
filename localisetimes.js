@@ -3,7 +3,7 @@
 const tzaolObj = {"GMT":0,"EAT":180,"CET":60,"WAT":60,"CAT":120,"EET":120,"WEST":60,"WET":0,"CEST":120,"SAST":120,"HDT":-540,"HST":-600,"AKDT":-480,"AKST":-540,"AST":-240,"EST":-300,"CDT":-300,"CST":-360,"MDT":-360,"MST":-420,"PDT":-420,"PST":-480,"EDT":-240,"ADT":-180,"NDT":-90,"NST":-150,"NZST":720,"NZDT":780,"EEST":180,"HKT":480,"WIB":420,"WIT":540,"IDT":180,"IST":120,"PKT":300,"WITA":480,"KST":510,"JST":540,"ACST":570,"ACDT":630,"AEST":600,"AEDT":660,"AWST":480,"BST":60,"MSK":180,"SST":-660,"UTC":0,"PT":0,"ET":0,"MT":0,"CT":0};
 const tzaolStr = Object.keys(tzaolObj).join("|");
 //const timeRegex = new RegExp('\\b([0-2]*[0-9])((:|\.)[0-5][0-9])?(?: ?([ap](?:\.?m\.?)?))?(?: ?(' + tzaolStr + '))( ?(?:\\+|-) ?[0-9]{1,2})?\\b', 'gi');
-const timeRegex = new RegExp('\\b(?:([0-2]?[0-9])((:|\.)[0-5][0-9])?(:[0-5][0-9])?(?: ?([ap](?:.?m.?)?))? ?[-|\\u{8211}|\\u{8212}|\\u{8213}] ?\\b)?([0-2]?[0-9])((:|\.)[0-5][0-9])?(:[0-5][0-9])?(?: ?([ap](?:\.?m\.?)?))?(?: ?(' + tzaolStr + '))( ?(?:\\+|-) ?[0-9]{1,2})?\\b', 'giu');
+const timeRegex = new RegExp('\\b(?:([0-2]?[0-9])((:|\\.)[0-5][0-9])?(:[0-5][0-9])?(?: ?([ap](?:.?m.?)?))? ?[-|\\u{8211}|\\u{8212}|\\u{8213}] ?\\b)?([0-2]?[0-9])((:|\\.)[0-5][0-9])?(:[0-5][0-9])?(?: ?([ap](?:\\.?m\\.?)?))?(?: ?(' + tzaolStr + '))( ?(?:\\+|-) ?[0-9]{1,2})?\\b', 'giu');
 
 //Match group enumeration
 const _G = {
@@ -197,6 +197,7 @@ function spotTime(str, dateObj) {
 		if (!match[_G.tzAbr] || typeof tzaolObj[match[_G.tzAbr].toUpperCase()] == "undefined") { continue; }
 		//We need to change the start of the regex to... maybe (^|\s)
 		//The issue here is that : matches the word boundary, and if the input is "30:15 gmt" then it'll match "15 gmt"
+
 		if (str[match.index - 1] === ":" || str[match.index - 1] === ".") { continue; }
 
 		if (match[_G.tzAbr] === 'pt' && !(match[_G.meridiem] || match[_G.minsIncSep])) { continue; } //Temporary quirk to avoid matching font sizes
@@ -240,8 +241,16 @@ function spotTime(str, dateObj) {
 		);
 
 		let localeStartTimeString = '';
-		if (match[_G.startHour] && (+match[_G.startHour] > 0 && !match[_G.meridiem] && !match[_G.startMeridiem]) && +match[_G.startHour] < 24) {
-			//0 is only accepted as a start hour if no meridiems are used, so we're reasonably certain it's a 24hour time.
+
+		let validMidnight = true;
+		//0 is only accepted as a start hour if no meridiems are used, so we're reasonably certain it's a 24hour time.
+		if (match[_G.startHour]) {
+			if (+match[_G.startHour] === 0) {
+				validMidnight = !match[_G.meridiem] && !match[_G.startMeridiem];
+			}
+		}
+
+		if (match[_G.startHour] && validMidnight && +match[_G.startHour] < 24) {
 
 			//This is a time range
 			//Can we avoid duplicate code?
@@ -259,7 +268,7 @@ function spotTime(str, dateObj) {
 				}
 				//Make sure we haven't just made the start time later than the end
 				if (tmpStartHour < tHour) {
-					startHour = tmpStartHour
+					startHour = tmpStartHour;
 				}
 			}
 			//if (startHour > tHour) { console.warn("Invalid time range.", startHour, tHour); }
