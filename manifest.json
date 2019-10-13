@@ -2,7 +2,7 @@
 
   "manifest_version": 2,
   "name": "Localise Times",
-  "version": "1.5.4",
+  "version": "1.5.5",
 
   "description": "Detects times given with timezone abbreviations, and converts them to your local time.",
 

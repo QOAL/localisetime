@@ -217,7 +217,7 @@ function spotTime(str, dateObj) {
 		let hourOffset = 0;
 		//Sometimes people write a tz and then +X (like UTC+1)
 		if (match[_G.offset]) {
-			hourOffset = +(match[_G.offset].replace(/\s/g, '')) * 60;
+			hourOffset = -(match[_G.offset].replace(/\s/g, '')) * 60;
 		}
 		let tCorrected = tMinsFromMidnight - tzaolObj[match[_G.tzAbr].toUpperCase()] + hourOffset;
 		tCorrected -= dateObj.getTimezoneOffset();
