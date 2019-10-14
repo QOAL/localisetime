@@ -3,7 +3,7 @@
 const tzaolObj = {"GMT":0,"EAT":180,"CET":60,"WAT":60,"CAT":120,"EET":120,"WEST":60,"WET":0,"CEST":120,"SAST":120,"HDT":-540,"HST":-600,"AKDT":-480,"AKST":-540,"AST":-240,"EST":-300,"CDT":-300,"CST":-360,"MDT":-360,"MST":-420,"PDT":-420,"PST":-480,"EDT":-240,"ADT":-180,"NDT":-90,"NST":-150,"NZST":720,"NZDT":780,"EEST":180,"HKT":480,"WIB":420,"WIT":540,"IDT":180,"IST":120,"PKT":300,"WITA":480,"KST":510,"JST":540,"ACST":570,"ACDT":630,"AEST":600,"AEDT":660,"AWST":480,"BST":60,"MSK":180,"SST":-660,"UTC":0,"PT":0,"ET":0,"MT":0,"CT":0};
 const tzaolStr = Object.keys(tzaolObj).join("|");
 //const timeRegex = new RegExp('\\b([0-2]*[0-9])((:|\.)[0-5][0-9])?(?: ?([ap](?:\.?m\.?)?))?(?: ?(' + tzaolStr + '))( ?(?:\\+|-) ?[0-9]{1,2})?\\b', 'gi');
-const timeRegex = new RegExp('\\b(?:([0-2]?[0-9])((:|\\.)[0-5][0-9])?(:[0-5][0-9])?(?: ?([ap](?:.?m.?)?))? ?[-|\\u{8211}|\\u{8212}|\\u{8213}] ?\\b)?([0-2]?[0-9])((:|\\.)[0-5][0-9])?(:[0-5][0-9])?(?: ?([ap](?:\\.?m\\.?)?) )?(?: ?(' + tzaolStr + '))( ?(?:\\+|-) ?[0-9]{1,2})?\\b', 'giu');
+const timeRegex = new RegExp('\\b(?:([0-2]?[0-9])((:|\\.)[0-5][0-9])?(:[0-5][0-9])?(?: ?([ap]\\.?m?\\.?))? ?[-|\\u{8211}|\\u{8212}|\\u{8213}] ?\\b)?([0-2]?[0-9])((:|\\.)[0-5][0-9])?(:[0-5][0-9])?(?: ?([ap]\\.?m?\\.?) )?(?: ?(' + tzaolStr + '))( ?(?:\\+|-) ?[0-9]{1,2})?\\b', 'giu');
 
 //Match group enumeration
 const _G = {
@@ -31,6 +31,8 @@ const _G = {
 	tzAbr: 5,
 	offset: 6
 */
+
+const whiteSpaceRegEx = /\s/g
 
 function lookForTimes(node = document.body) {
 	//Walk the dom looking for text nodes
@@ -193,9 +195,11 @@ function spotTime(str, dateObj) {
 
 	let timeInfo = [];
 	for (const match of matches) {
-
 		//Check that we have a match, with a valid timezone.
-		if (!match[_G.tzAbr] || typeof tzaolObj[match[_G.tzAbr].toUpperCase()] == "undefined") { continue; }
+		let upperTZ = match[_G.tzAbr].toUpperCase()
+		if (!match[_G.tzAbr] || typeof tzaolObj[upperTZ] == "undefined") { continue; }
+		//Demand the timezone abbreviation be all the same case
+		if (!(match[_G.tzAbr] === upperTZ || match[_G.tzAbr] === match[_G.tzAbr].toLowerCase())) { continue; }
 		//We need to change the start of the regex to... maybe (^|\s)
 		//The issue here is that : matches the word boundary, and if the input is "30:15 gmt" then it'll match "15 gmt"
 
@@ -211,15 +215,18 @@ function spotTime(str, dateObj) {
 			if (match[_G.meridiem][0].toLowerCase() == 'p') {
 				tHour += 12;
 			}
+		} else if (match[_G.startHour] && tHour < 12 && tHour < match[_G.startHour]) {
+			//Non-exhaustive tHour/startHour test - This probably needs fleshing out?
+			tHour += 12;
 		}
 		let tMins = (match[_G.minsIncSep] ? match[_G.minsIncSep] : ':00');
 		let tMinsFromMidnight = h2m(tHour + tMins, match[_G.separator]);
 		let hourOffset = 0;
 		//Sometimes people write a tz and then +X (like UTC+1)
 		if (match[_G.offset]) {
-			hourOffset = -(match[_G.offset].replace(/\s/g, '')) * 60;
+			hourOffset = -(match[_G.offset].replace(whiteSpaceRegEx, '')) * 60;
 		}
-		let tCorrected = tMinsFromMidnight - tzaolObj[match[_G.tzAbr].toUpperCase()] + hourOffset;
+		let tCorrected = tMinsFromMidnight - tzaolObj[upperTZ] + hourOffset;
 		tCorrected -= dateObj.getTimezoneOffset();
 
 		//Build the localised time
@@ -276,7 +283,7 @@ function spotTime(str, dateObj) {
 			let startMins = (match[_G.startMinsIncSep] ? match[_G.startMinsIncSep] : ':00');
 			let startMinsFromMidnight = h2m(startHour + startMins, match[_G.startSeparator]);
 
-			let startCorrected = startMinsFromMidnight - tzaolObj[match[_G.tzAbr].toUpperCase()] + hourOffset;
+			let startCorrected = startMinsFromMidnight - tzaolObj[upperTZ] + hourOffset;
 			startCorrected -= dateObj.getTimezoneOffset();
 
 			//Build the localised time
