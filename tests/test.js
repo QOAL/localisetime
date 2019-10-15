@@ -12,7 +12,7 @@ fs.readFile('../localisetimes.js', {encoding: 'utf8'}, (err, data) => {
 	console.log("Web extension loaded...")
 
 	//Remove the call to init, and export the spotTime function
-	const webExt = data.replace('init();', '') + "\n\nexports.spotTime = spotTime;exports.tzaolObj = tzaolObj"
+const webExt = data.replace(/lookForTimes\(\);[\S\s]*function handleMutations/, "}\nfunction handleMutations") + "\n\nexports.spotTime = spotTime;exports.tzaolObj = tzaolObj"
 
 	fs.writeFile('testfile.js', webExt, err => {
 		if (err) {

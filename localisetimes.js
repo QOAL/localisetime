@@ -2,9 +2,9 @@
 //PHP spat these timezone abbreviations out, and their offsets - There could be some missing
 const tzaolObj = {"GMT":0,"EAT":180,"CET":60,"WAT":60,"CAT":120,"EET":120,"WEST":60,"WET":0,"CEST":120,"SAST":120,"HDT":-540,"HST":-600,"AKDT":-480,"AKST":-540,"AST":-240,"EST":-300,"CDT":-300,"CST":-360,"MDT":-360,"MST":-420,"PDT":-420,"PST":-480,"EDT":-240,"ADT":-180,"NDT":-90,"NST":-150,"NZST":720,"NZDT":780,"EEST":180,"HKT":480,"WIB":420,"WIT":540,"IDT":180,"IST":120,"PKT":300,"WITA":480,"KST":510,"JST":540,"ACST":570,"ACDT":630,"AEST":600,"AEDT":660,"AWST":480,"BST":60,"MSK":180,"SST":-660,"UTC":0,"PT":0,"ET":0,"MT":0,"CT":0};
 const tzaolStr = Object.keys(tzaolObj).join("|");
-//const timeRegex = new RegExp('\\b([0-2]*[0-9])((:|\.)[0-5][0-9])?(?: ?([ap](?:\.?m\.?)?))?(?: ?(' + tzaolStr + '))( ?(?:\\+|-) ?[0-9]{1,2})?\\b', 'gi');
-const timeRegex = new RegExp('\\b(?:([0-2]?[0-9])((:|\\.)[0-5][0-9])?(:[0-5][0-9])?(?: ?([ap]\\.?m?\\.?))? ?[-|\\u{8211}|\\u{8212}|\\u{8213}] ?\\b)?([0-2]?[0-9])((:|\\.)[0-5][0-9])?(:[0-5][0-9])?(?: ?([ap]\\.?m?\\.?) )?(?: ?(' + tzaolStr + '))( ?(?:\\+|-) ?[0-9]{1,2})?\\b', 'giu');
 
+const timeRegex = new RegExp('\\b(?:([01]?[0-9]|2[0-3])((:|\\.)[0-5][0-9])?(:[0-5][0-9])?(?: ?([ap]\\.?m?\\.?))? ?[-\u2010-\u2015] ?\\b)?([01]?[0-9]|2[0-3])((:|\\.)[0-5][0-9])?(:[0-5][0-9])?(?: ?([ap]\\.?m?\\.?) )?(?: ?(' + tzaolStr + '))( ?(?:\\+|-) ?[0-9]{1,2})?\\b', 'giu');
+//[-|\\u{8211}|\\u{8212}|\\u{8213}]
 //Match group enumeration
 const _G = {
 	fullStr: 0,
@@ -23,16 +23,8 @@ const _G = {
 	tzAbr: 11,
 	offset: 12
 };
-/*
-	hours: 1,
-	minsIncSep: 2,
-	separator: 3,
-	meridiem: 4,
-	tzAbr: 5,
-	offset: 6
-*/
 
-const whiteSpaceRegEx = /\s/g
+const whiteSpaceRegEx = /\s/g;
 
 function lookForTimes(node = document.body) {
 	//Walk the dom looking for text nodes
@@ -59,8 +51,9 @@ function lookForTimes(node = document.body) {
 		for (let t = 0; t < timeInfo.length; t++) {
 			let thisTime = timeInfo[t];
 
-			//Create a span to hold this converted time
-			let tmpTime = document.createElement("span");
+			//Create a time to hold this converted time
+			//We were using a span, but many websites have default span styling which might affect page flow
+			let tmpTime = document.createElement("time");
 			tmpTime.style.cursor = "pointer"; //Indicate that it's interactive
 			tmpTime.style.borderBottom = "1px dotted currentColor"; //Modest styling that should fit in with any content
 			tmpTime.textContent = thisTime[0]; //Our converted time
@@ -209,7 +202,6 @@ function spotTime(str, dateObj) {
 
 		let tHour = +match[_G.hours];
 		if (tHour == 0 && !match[_G.minsIncSep]) { continue; } //Bail if the hour is 0 and we have no minutes. (We could assume midnight)
-		if (tHour > 23) { continue; } //Bail if we're going over a day
 		if (match[_G.meridiem]) {
 			tHour = (12 + tHour) % 12;
 			if (match[_G.meridiem][0].toLowerCase() == 'p') {
@@ -228,7 +220,7 @@ function spotTime(str, dateObj) {
 		}
 		let tCorrected = tMinsFromMidnight - tzaolObj[upperTZ] + hourOffset;
 		tCorrected -= dateObj.getTimezoneOffset();
-
+		if (tCorrected < 0) { tCorrected += 1440; }
 		//Build the localised time
 		let tmpExplode = m2h(tCorrected).split(":");
 		let tmpDate = new Date(
@@ -258,7 +250,7 @@ function spotTime(str, dateObj) {
 			}
 		}
 
-		if (match[_G.startHour] && validMidnight && +match[_G.startHour] < 24) {
+		if (match[_G.startHour] && validMidnight) {
 
 			//This is a time range
 			//Can we avoid duplicate code?
