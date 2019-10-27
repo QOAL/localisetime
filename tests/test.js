@@ -11,8 +11,8 @@ fs.readFile('../localisetimes.js', {encoding: 'utf8'}, (err, data) => {
 
 	console.log("Web extension loaded...")
 
-	//Remove the call to init, and export the spotTime function
-const webExt = data.replace(/lookForTimes\(\);[\S\s]*function handleMutations/, "}\nfunction handleMutations") + "\n\nexports.spotTime = spotTime;exports.tzaolObj = tzaolObj"
+	//Apply a few simple patches to the web extension so it's usable in the test suite
+	const webExt = patchWebExt(data)
 
 	fs.writeFile('testfile.js', webExt, err => {
 		if (err) {
@@ -31,3 +31,24 @@ const webExt = data.replace(/lookForTimes\(\);[\S\s]*function handleMutations/, 
 
 	})
 })
+
+function patchWebExt(input) {
+	let output
+
+	//Remove some unnecessary function calls
+	output = input.replace(/lookForTimes\(\);[\S\s]*function handleMutations/, "}\nfunction handleMutations")
+
+	//Make the required code available to the test suite
+	output += "\n\nexports.spotTime = spotTime;exports.tzaolObj = tzaolObj"
+
+	//Force the local timezone to BST (GMT + 1)
+	//This makes the test results consistent regardless of where you live
+	let dateObj = new Date()
+	let useTimezone = dateObj.getTimezoneOffset() === 0 ? 'Etc/GMT-2' : 'Etc/GMT-1'
+	let matches = output.matchAll(/(\n.*toLocaleTimeString)/g);
+	for (const match of matches) {
+		output = output.replace(match[0], `\ntimeFormat.timeZone = '${useTimezone}';` + match[0])
+	}
+
+	return output
+}
