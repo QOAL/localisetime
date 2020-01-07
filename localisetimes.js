@@ -175,7 +175,7 @@ function contentMessageListener(request, sender, sendResponse) {
 	if (!request.convert) { return }
 	lookForTimes(document.body, request.convert);
 }
-browser.runtime.onMessage.addListener(contentMessageListener);
+chrome.runtime.onMessage.addListener(contentMessageListener);
 
 function spotTime(str, dateObj, manualTZ) {
 	/*

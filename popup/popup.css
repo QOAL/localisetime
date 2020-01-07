@@ -8,6 +8,7 @@
 	background: #272335;
 	overflow: hidden;
 	line-height: 1.333;
+	white-space: nowrap;
 }
 
 ::selection {

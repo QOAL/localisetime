@@ -65,15 +65,15 @@ function useSelectedTimezone() {
 	let tzList = document.getElementById("tzList");
 	let selectedTZ = tzList.options[tzList.selectedIndex].value;
 	if (tzaolObj[selectedTZ] !== 'undefined') {
-		var querying = browser.tabs.query({
-			active: true,
-			currentWindow: true
-		});
-		querying.then(tabs => {
-			browser.tabs.sendMessage(tabs[0].id, {
-				convert: selectedTZ
-			});
-		});
+		chrome.tabs.query(
+			{ active: true, currentWindow: true },
+			(tabs) => {
+				chrome.tabs.sendMessage(
+					tabs[0].id,
+					{ convert: selectedTZ }
+				);
+			}
+		);
 	}
 	window.close();
 }
@@ -83,12 +83,15 @@ function popupMessageListener(request, sender, sendResponse) {
 	//We're currently only interested in messages that tell us how many valid times (Without timezone abbreviations) are included on a page?
 	if (!request.timesCount) { return }
 }
-browser.runtime.onMessage.addListener(popupMessageListener);*/
+chrome.runtime.onMessage.addListener(popupMessageListener);*/
 
-browser.tabs.executeScript({
-	code: '1+1;'
-}).then(onExecuted, onError);
-function onError(e) {
-	document.body.setAttribute("class", "blockedHere");
-}
-function onExecuted() {}
+chrome.tabs.query(
+	{ active: true, currentWindow: true },
+	(tabs) => {
+		chrome.tabs.executeScript(
+			tabs[0].id,
+			{ code: '1+1;' },
+			(result) => { if (!result) { document.body.setAttribute("class", "blockedHere"); } }
+		);
+	}
+);
