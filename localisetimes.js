@@ -24,9 +24,11 @@ const _G = {
 	offset: 12
 };
 
+const timeWithoutTZRegex = new RegExp('\\b(?:([01]?[0-9]|2[0-3])((:|\\.)[0-5][0-9])?(:[0-5][0-9])?(?: ?([ap]\\.?m?\\.?))? ?[-\u2010-\u2015] ?\\b)?([01]?[0-9]|2[0-3])((:|\\.)[0-5][0-9])?(:[0-5][0-9])?(?: ?([ap]\\.?m?\\.?))?\\b', 'giu');
+
 const whiteSpaceRegEx = /\s/g;
 
-function lookForTimes(node = document.body) {
+function lookForTimes(node = document.body, manualTZ) {
 	//Walk the dom looking for text nodes
 	var walker = document.createTreeWalker(node, NodeFilter.SHOW_TEXT);
 
@@ -39,8 +41,15 @@ function lookForTimes(node = document.body) {
 	const dateObj = new Date();
 
 	for(var i = 0; node=nodes[i] ; i++) {
+
+		//If we're manually converting times then avoid any existing times that have been converted
+		if (manualTZ && node.parentElement.hasAttribute("data-localised")) { continue; }
+
+		//Ignore any text nodes that are purely white space
+		if (node.nodeValue.trim().length === 0) { continue; }
+
 		//Look at each text node, and try and find valid times
-		let timeInfo = spotTime(node.nodeValue, dateObj);
+		let timeInfo = spotTime(node.nodeValue, dateObj, manualTZ);
 		//We get an array back, if it has stuff in it then take action
 		if (timeInfo.length === 0) { continue; }
 
@@ -58,9 +67,12 @@ function lookForTimes(node = document.body) {
 			tmpTime.style.borderBottom = "1px dotted currentColor"; //Modest styling that should fit in with any content
 			tmpTime.textContent = thisTime[0]; //Our converted time
 			//Let people mouse over the converted time to see what was actually written
-			tmpTime.setAttribute("title", 'Converted to your local time from "' + thisTime[1] + '"');
+			tmpTime.setAttribute("title", 'Converted to your local time from "' + thisTime[1] + (manualTZ ? ' ' + manualTZ : '') + '"');
 			tmpTime.setAttribute("data-localised", thisTime[0]); //Used when toggling
 			tmpTime.setAttribute("data-original", thisTime[1]); //Used when toggling
+			if (manualTZ) {
+				tmpTime.setAttribute("data-manualTZ", manualTZ); //Used when toggling
+			}
 			tmpFrag.appendChild(tmpTime);
 			tmpTime.addEventListener("click", toggleTime);
 
@@ -86,10 +98,15 @@ function toggleTime(e) {
 	if (!this || !this.hasAttribute("data-original") || !this.hasAttribute("data-localised")) {
 		return;
 	}
+
 	//Which state are we in?
 	if (this.getAttribute("data-original") == this.textContent) {
+		let manualTZStr = '';
+		if (this.hasAttribute("data-manualTZ")) {
+			manualTZStr = ' ' + this.getAttribute("data-manualTZ");
+		}
 		this.textContent = this.getAttribute("data-localised");
-		this.setAttribute("title", 'Converted to your local time from "' + this.getAttribute("data-original") + '"');
+		this.setAttribute("title", 'Converted to your local time from "' + this.getAttribute("data-original") + manualTZStr + '"');
 	} else {
 		this.textContent = this.getAttribute("data-original");
 		this.setAttribute("title", 'Converted to your local time this is "' + this.getAttribute("data-localised") + '"');
@@ -153,8 +170,14 @@ function handleMutations(mutationsList, observer) {
 
 init();
 
+//Listen for, and process, any relevant messages being passed from the popup menu (browser_action)
+function contentMessageListener(request, sender, sendResponse) {
+	if (!request.convert) { return }
+	lookForTimes(document.body, request.convert);
+}
+browser.runtime.onMessage.addListener(contentMessageListener);
 
-function spotTime(str, dateObj) {
+function spotTime(str, dateObj, manualTZ) {
 	/*
 		A well thought out version of this would take into account for info
 		Such as words used in the tweet which might imply a date
@@ -184,15 +207,32 @@ function spotTime(str, dateObj) {
 	It's way more than this list now.
 	*/
 
-	let matches = str.matchAll(timeRegex);
+	let matches = [];
+	if (manualTZ) {
+		matches = str.matchAll(timeWithoutTZRegex);
+	} else {
+		matches = str.matchAll(timeRegex);
+	}
 
 	let timeInfo = [];
 	for (const match of matches) {
+
+		let upperTZ = '';
+		if (manualTZ) {
+			//We need to be stricter on what times we detect when dealing with manual conversion
+			//Otherwise we'll have a lot of false positives!
+			if (!match[_G.minsIncSep] && !match[_G.meridiem]) { continue; }
+			upperTZ = manualTZ;
+			match[_G.tzAbr] = manualTZ;
+		} else {
+			upperTZ = match[_G.tzAbr].toUpperCase();
+		}
+
 		//Check that we have a match, with a valid timezone.
-		let upperTZ = match[_G.tzAbr].toUpperCase()
 		if (!match[_G.tzAbr] || typeof tzaolObj[upperTZ] == "undefined") { continue; }
 		//Demand the timezone abbreviation be all the same case
 		if (!(match[_G.tzAbr] === upperTZ || match[_G.tzAbr] === match[_G.tzAbr].toLowerCase())) { continue; }
+
 		//We need to change the start of the regex to... maybe (^|\s)
 		//The issue here is that : matches the word boundary, and if the input is "30:15 gmt" then it'll match "15 gmt"
 
