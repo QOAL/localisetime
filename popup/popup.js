@@ -91,7 +91,7 @@ chrome.tabs.query(
 		chrome.tabs.executeScript(
 			tabs[0].id,
 			{ code: '1+1;' },
-			(result) => { if (!result) { document.body.setAttribute("class", "blockedHere"); } }
+			(result) => { if (chrome.runtime.lastError || !result) { document.body.setAttribute("class", "blockedHere"); } }
 		);
 	}
 );
