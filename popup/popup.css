@@ -1,0 +1,104 @@
+#localiseTimesPopup {
+	border: 2px solid #1b1825;
+	padding: 10px;
+	z-index: 99;
+	font-family: -apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif;
+	font-size: medium;
+	color: #f0f0f0;	
+	background: #272335;
+	overflow: hidden;
+	line-height: 1.333;
+	white-space: nowrap;
+}
+
+::selection {
+	color: inherit;
+	background: transparent;
+	text-shadow: none;
+}
+
+select, button, h3 {
+	font-family: inherit;
+	font-size: inherit;
+	color: inherit;
+	line-height: 1.333;
+}
+
+
+h3 {
+	font-size: large;
+	font-weight: 600;
+	background-image: linear-gradient(35deg, #cf3463 54%, #30cb9c 55%);
+	margin: -10px -10px 10px -10px;
+	padding: 5px 0;
+	text-shadow: 1px 1px 0 rgba(0,0,0,.333);
+	text-indent: 10px;
+	letter-spacing: 1px;
+}
+
+h5 {
+	margin: 0 0 5px 0;
+	font-weight: 600;
+}
+
+#selectOKCont {
+	display: flex;
+	flex-direction: row;
+	margin-top: 10px;
+}
+
+select {
+	flex: 1 1 auto;
+	cursor: pointer;
+	margin-right: 20px;
+	background: #512740;
+	border: none;
+	/*scrollbar-width: thin;*/
+	scrollbar-color: #f0f0f0 #1b1825;
+	border-radius: 2.5px;
+}
+select:hover, select:focus {
+	background: #7b2b4c;
+	border-color: #cf3463;
+}
+select:active {
+	background: #cf3463;
+}
+
+option {
+	padding: 3px 5px;
+	background: #272335;
+}
+
+button {
+	background: #294d4e;
+	border: none;
+	border-radius: 2.5px;
+	padding: 4px 16px;
+	cursor: pointer;
+	color: #f0f0f0;
+	font-weight: 600;
+}
+button:focus, button:hover {
+	background: #2b7768;
+	border-color: #30cb9c;
+}
+button:active {
+	background: #30cb9c;
+	color: #1b1825;
+}
+
+button span {
+	display: block;
+	transform: translateY(0);
+}
+button:active span {
+	transform: translateY(1px);
+}
+
+.blockedHere #normalContent, #blockedHereContent {
+	display: none;
+}
+.blockedHere #blockedHereContent {
+	display: block;
+}

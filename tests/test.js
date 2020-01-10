@@ -38,17 +38,24 @@ function patchWebExt(input) {
 	//Remove some unnecessary function calls
 	output = input.replace(/lookForTimes\(\);[\S\s]*function handleMutations/, "}\nfunction handleMutations")
 
+	//Comment out the listener used by the web extension
+	output = output.replace("chrome.runtime", "//chrome.runtime")
+
 	//Make the required code available to the test suite
 	output += "\n\nexports.spotTime = spotTime;exports.tzaolObj = tzaolObj"
 
 	//Force the local timezone to BST (GMT + 1)
 	//This makes the test results consistent regardless of where you live
 	let dateObj = new Date()
-	let useTimezone = dateObj.getTimezoneOffset() === 0 ? 'Etc/GMT-2' : 'Etc/GMT-1'
+	let useTimezone = 'Etc/GMT-1'
 	let matches = output.matchAll(/(\n.*toLocaleTimeString)/g);
 	for (const match of matches) {
 		output = output.replace(match[0], `\ntimeFormat.timeZone = '${useTimezone}';` + match[0])
 	}
+	//Fake the timezone offset.
+	output = output.replace(/dateObj.getTimezoneOffset\(\);/g, "0;")
+	//Force north american time aliases into summer time
+	output = output.replace(/tmpNow = Date.now\(\);/, "tmpNow = Date.UTC(thisYear, 3, tmpDay, 2);");
 
 	return output
 }

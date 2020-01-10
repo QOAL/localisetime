@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="utf-8" />
+		<link rel="stylesheet" href="popup.css"/>
+		<script src="popup.js"></script>
+	</head>
+	<body>
+		<div id="localiseTimesPopup">
+			<h3>Localise Times</h3>
+			<div id="normalContent">
+				<h5>Manually convert times missing a stated time zone.</h5>
+				Please select the source time zone.
+				<div id="selectOKCont">
+					<select id="tzList"><option value="UTC" selected>UTC (UTC+00:00)</option></select>
+					<button id="useSelectedTimezone"><span>OK</span></button>
+				</div>
+			</div>
+			<div id="blockedHereContent">
+				The extension is unable to function on this page.
+			</div>
+		</div>
+	</body>
+</html>
