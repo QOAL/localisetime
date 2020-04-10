@@ -3,7 +3,7 @@
 const tzaolObj = {"GMT":0,"EAT":180,"CET":60,"WAT":60,"CAT":120,"EET":120,"WEST":60,"WET":0,"CEST":120,"SAST":120,"HDT":-540,"HST":-600,"AKDT":-480,"AKST":-540,"AST":-240,"EST":-300,"CDT":-300,"CST":-360,"MDT":-360,"MST":-420,"PDT":-420,"PST":-480,"EDT":-240,"ADT":-180,"NST":-210,"NDT":-150,"NZST":720,"NZDT":780,"EEST":180,"HKT":480,"WIB":420,"WIT":540,"IDT":180,"IST":120,"PKT":300,"WITA":480,"KST":510,"JST":540,"ACST":570,"ACDT":630,"AEST":600,"AEDT":660,"AWST":480,"BST":60,"MSK":180,"SST":-660,"UTC":0,"PT":0,"ET":0,"MT":0,"CT":0};
 const tzaolStr = Object.keys(tzaolObj).join("|");
 
-const timeRegex = new RegExp('\\b(?:([01]?[0-9]|2[0-3])((:|\\.)[0-5][0-9])?(:[0-5][0-9])?(?: ?([ap]\\.?m?\\.?))? ?[-\u2010-\u2015] ?\\b)?([01]?[0-9]|2[0-3])((:|\\.)[0-5][0-9])?(:[0-5][0-9])?(?: ?([ap]\\.?m?\\.?) )?(?: ?(' + tzaolStr + '))( ?(?:\\+|-) ?[0-9]{1,2})?\\b', 'giu');
+const timeRegex = new RegExp('\\b(?:([01]?[0-9]|2[0-3])((:|\\.)[0-5][0-9])?(:[0-5][0-9])?(?: ?([ap]\\.?m?\\.?))? ?(to|until|til|and|[-\u2010-\u2015]) ?\\b)?([01]?[0-9]|2[0-3])((:|\\.)[0-5][0-9])?(:[0-5][0-9])?(?: ?([ap]\\.?m?\\.?) )?(?: ?(' + tzaolStr + '))( ?(?:\\+|-) ?[0-9]{1,2})?\\b', 'giu');
 //[-|\\u{8211}|\\u{8212}|\\u{8213}]
 //Match group enumeration
 const _G = {
@@ -15,16 +15,18 @@ const _G = {
 	startSeconds: 4,
 	startMeridiem: 5,
 
-	hours: 6,
-	minsIncSep: 7,
-	separator: 8,
-	seconds: 9,
-	meridiem: 10,
-	tzAbr: 11,
-	offset: 12
+	timeSeparator: 6,
+
+	hours: 7,
+	minsIncSep: 8,
+	separator: 9,
+	seconds: 10,
+	meridiem: 11,
+	tzAbr: 12,
+	offset: 13
 };
 
-const timeWithoutTZRegex = new RegExp('\\b(?:([01]?[0-9]|2[0-3])((:|\\.)[0-5][0-9])?(:[0-5][0-9])?(?: ?([ap]\\.?m?\\.?))? ?[-\u2010-\u2015] ?\\b)?([01]?[0-9]|2[0-3])((:|\\.)[0-5][0-9])?(:[0-5][0-9])?(?: ?([ap]\\.?m?\\.?))?\\b', 'giu');
+const timeWithoutTZRegex = new RegExp('\\b(?:([01]?[0-9]|2[0-3])((:|\\.)[0-5][0-9])?(:[0-5][0-9])?(?: ?([ap]\\.?m?\\.?))? ?(to|until|til|and|[-\u2010-\u2015]) ?\\b)?([01]?[0-9]|2[0-3])((:|\\.)[0-5][0-9])?(:[0-5][0-9])?(?: ?([ap]\\.?m?\\.?))?\\b', 'giu');
 
 const whiteSpaceRegEx = /\s/g;
 
@@ -41,6 +43,21 @@ function lookForTimes(node = document.body, manualTZ) {
 	const dateObj = new Date();
 
 	for(var i = 0; node=nodes[i] ; i++) {
+
+		//We should try and avoid working inside contenteditable="true" elements, as it could cause issues for the user
+		//I'm going to assume that they don't get horribly nested, so only check up a few nodes.
+		let tmpNode = node;
+		let nodeCount = 0;
+		let skipThis = false;
+		while (tmpNode && tmpNode !== document.body && nodeCount < 5) {
+			if (tmpNode.parentNode.hasAttribute("contenteditable")) {
+				skipThis = true;
+				break;
+			}
+			tmpNode = tmpNode.parentNode;
+			nodeCount++;
+		}
+		if (skipThis) { continue; }
 
 		//If we're manually converting times then avoid any existing times that have been converted
 		if (manualTZ && node.parentElement.hasAttribute("data-localised")) { continue; }
@@ -339,8 +356,8 @@ function spotTime(str, dateObj, manualTZ) {
 			//It would be nice to avoid including the meridiem if it's the same as the main time
 			localeStartTimeString = tmpDate.toLocaleTimeString(
 				undefined, timeFormat
-			) + ' – ';
-			//Should we capture the user defined separator and reuse it?
+			) + " " + (match[_G.timeSeparator].length === 1 ? "–" : match[_G.timeSeparator]) + " ";//' – ';
+			//Should we capture the user defined separator and reuse it? - Yes, and we are now.
 		}
 
 		//Store the localised time, the time that we matched, its offset and length
