@@ -257,6 +257,9 @@ function spotTime(str, dateObj, manualTZ) {
 
 		if (match[_G.tzAbr] === 'pt' && !(match[_G.meridiem] || match[_G.minsIncSep])) { continue; } //Temporary quirk to avoid matching font sizes
 
+		//Avoid cat and eat false positives
+		if ((match[_G.tzAbr] !== 'CAT' || match[_G.tzAbr] !== 'EAT') && !(match[_G.meridiem] || match[_G.minsIncSep])) { continue; }
+
 		let tHour = +match[_G.hours];
 		if (tHour == 0 && !match[_G.minsIncSep]) { continue; } //Bail if the hour is 0 and we have no minutes. (We could assume midnight)
 		if (match[_G.meridiem]) {
