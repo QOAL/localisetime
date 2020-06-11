@@ -1,0 +1,53 @@
+{
+	"extensionName": {
+		"message": "Localise Times",
+		"description": "Name of the extension."
+	},
+
+	"extensionDescription": {
+		"message": "Detects times given with time zone abbreviations, and converts them to your local time.",
+		"description": "Description of the extension."
+	},
+
+	"popupManualConvert": {
+		"message": "Manually convert times missing a stated time zone.",
+		"description": "Manual conversion feature text"
+	},
+
+	"popupManualConvertSourceText": {
+		"message": "Please select the source time zone.",
+		"description": "Manual conversion usage hint"
+	},
+
+	"OK": {
+		"message": "OK",
+		"description": "OK"
+	},
+
+	"popupUnableToFunction": {
+		"message": "The extension is unable to function on this page.",
+		"description": "Displayed on pages that disallow the extension."
+	},
+
+	"tooltipConverted": {
+		"message": "Converted to your local time from \"$TIME$\".",
+		"description": "Tooltip shown when hovering over a converted time. Includes the orignal unconverted time",
+		"placeholders": {
+			"time": {
+				"content": "$1",
+				"example": "16:45 CET"
+			}
+		}
+	},
+
+	"tooltipUnconverted": {
+		"message": "Converted to your local time this is \"$TIME$\".",
+		"description": "Tooltip shown when hovering over an unconverted time. Includes the converted time",
+		"placeholders": {
+			"time": {
+				"content": "$1",
+				"example": "8:30am EDT"
+			}
+		}
+	}
+}
