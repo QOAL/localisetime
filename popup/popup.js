@@ -7,6 +7,9 @@ window.onload = function() {
 	document.getElementById("useSelectedTimezone").addEventListener("click", useSelectedTimezone);
 	//Defer populating the tzList until we interact with it.
 	document.getElementById("tzList").addEventListener("focus", buildTZList);
+	document.getElementById("manualText").textContent = chrome.i18n.getMessage("popupManualConvert");
+	document.getElementById("manualUsageHint").textContent = chrome.i18n.getMessage("popupManualConvertSourceText");
+	document.getElementById("useSelectedTimezone").children[0].textContent = chrome.i18n.getMessage("OK");
 }
 function buildTZList() {
 	if (builtTZList) { return; }
@@ -54,11 +57,22 @@ function buildTZList() {
 function tzOffsetToString(tzMins) {
 	//What on earth is this ugly code
 	let tzSign = tzMins < 0 ? '-' : '+';
-	let h = Math.floor(Math.abs(tzMins) / 60);
-	if (tzMins % 60 < 0) {  tzMins = Math.abs(tzMins); }
-	if (h > 23) { h = h - 24 + ''; } else { h += ''; }
-	let m = String(tzMins % 60).padStart(2, '0');
-	return tzSign + h.padStart(2, '0') + ":" + m;
+
+	let hours = Math.floor(Math.abs(tzMins) / 60);
+
+	if (tzMins % 60 < 0) {
+		tzMins = Math.abs(tzMins);
+	}
+
+	if (hours > 23) {
+		hours = hours - 24 + '';
+	} else {
+		hours += '';
+	}
+
+	let minutes = String(tzMins % 60).padStart(2, '0');
+
+	return tzSign + hours.padStart(2, '0') + ":" + minutes;
 }
 
 function useSelectedTimezone() {
@@ -91,7 +105,10 @@ chrome.tabs.query(
 		chrome.tabs.executeScript(
 			tabs[0].id,
 			{ code: '1+1;' },
-			(result) => { if (chrome.runtime.lastError || !result) { document.body.setAttribute("class", "blockedHere"); } }
+			(result) => { if (chrome.runtime.lastError || !result) {
+				document.getElementById("blockedHereContent").textContent = chrome.i18n.getMessage("popupUnableToFunction");
+				document.body.setAttribute("class", "blockedHere");
+			} }
 		);
 	}
 );

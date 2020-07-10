@@ -9,6 +9,7 @@
 	overflow: hidden;
 	line-height: 1.333;
 	white-space: nowrap;
+	user-select: none;
 }
 
 ::selection {

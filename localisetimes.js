@@ -84,7 +84,7 @@ function lookForTimes(node = document.body, manualTZ) {
 			tmpTime.style.borderBottom = "1px dotted currentColor"; //Modest styling that should fit in with any content
 			tmpTime.textContent = thisTime[0]; //Our converted time
 			//Let people mouse over the converted time to see what was actually written
-			tmpTime.setAttribute("title", 'Converted to your local time from "' + thisTime[1] + (manualTZ ? ' ' + manualTZ : '') + '"');
+			tmpTime.setAttribute("title", chrome.i18n.getMessage("tooltipConverted", thisTime[1] + (manualTZ ? ' ' + manualTZ : '')));
 			tmpTime.setAttribute("data-localised", thisTime[0]); //Used when toggling
 			tmpTime.setAttribute("data-original", thisTime[1]); //Used when toggling
 			if (manualTZ) {
@@ -123,10 +123,10 @@ function toggleTime(e) {
 			manualTZStr = ' ' + this.getAttribute("data-manualTZ");
 		}
 		this.textContent = this.getAttribute("data-localised");
-		this.setAttribute("title", 'Converted to your local time from "' + this.getAttribute("data-original") + manualTZStr + '"');
+		this.setAttribute("title", chrome.i18n.getMessage("tooltipConverted", this.getAttribute("data-original") + manualTZStr));
 	} else {
 		this.textContent = this.getAttribute("data-original");
-		this.setAttribute("title", 'Converted to your local time this is "' + this.getAttribute("data-localised") + '"');
+		this.setAttribute("title", chrome.i18n.getMessage("tooltipUnconverted", this.getAttribute("data-localised")));
 	}
 
 	//Stop any other events from firing (handy if this node is in a link)
