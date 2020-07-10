@@ -41,6 +41,7 @@ const tests = [
 	["1:30am jst", ["17:30"]],
 	["1:30pm jst", ["05:30"]],
 	["8| 01:30 jst", ["17:30"]],
+	["1 cat just isn't enough", [undefined]],
 ]
 let passCount = 0
 

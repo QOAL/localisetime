@@ -27,6 +27,7 @@ fs.readFile('../localisetimes.js', {encoding: 'utf8'}, (err, data) => {
 				throw error
 			}
 			console.log(stdout)
+			fs.unlink('testfile.js', () => {})
 		})
 
 	})
@@ -46,11 +47,12 @@ function patchWebExt(input) {
 
 	//Force the local timezone to BST (GMT + 1)
 	//This makes the test results consistent regardless of where you live
-	let dateObj = new Date()
+	output = output.replace(/let tmpDate = new Date\(\s/g, 'let tmpDate = new Date(Date.UTC(');
+	output = output.replace(/\.substring\(1\) : 0/g, '.substring(1) : 0)');
 	let useTimezone = 'Etc/GMT-1'
 	let matches = output.matchAll(/(\n.*toLocaleTimeString)/g);
 	for (const match of matches) {
-		output = output.replace(match[0], `\ntimeFormat.timeZone = '${useTimezone}';` + match[0])
+		output = output.replace(match[0], `\ntimeFormat.timeZone = '${useTimezone}'; ${match[0]}`)
 	}
 	//Fake the timezone offset.
 	output = output.replace(/dateObj.getTimezoneOffset\(\);/g, "0;")
