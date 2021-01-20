@@ -49,7 +49,7 @@ function lookForTimes(node = document.body, manualTZ) {
 		let tmpNode = node;
 		let nodeCount = 0;
 		let skipThis = false;
-		while (tmpNode && tmpNode !== document.body && nodeCount < 5) {
+		while (tmpNode && tmpNode.parentNode && tmpNode !== document.body && nodeCount < 5) {
 			if (tmpNode.parentNode.hasAttribute("contenteditable")) {
 				skipThis = true;
 				break;
