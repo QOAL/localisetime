@@ -40,7 +40,7 @@ function patchWebExt(input) {
 	output = input.replace(/lookForTimes\(\);[\S\s]*function handleMutations/, "}\nfunction handleMutations")
 
 	//Comment out the listener used by the web extension
-	output = output.replace("chrome.runtime", "//chrome.runtime")
+	output = output.replace("chrome.runtime.onMessage", "//chrome.runtime.onMessage")
 
 	//Make the required code available to the test suite
 	output += "\n\nexports.spotTime = spotTime;exports.tzaolObj = tzaolObj"

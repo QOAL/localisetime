@@ -1,34 +1,36 @@
 "use strict";
 //PHP spat these timezone abbreviations out, and their offsets - There could be some missing
-const tzaolObj = {"GMT":0,"EAT":180,"CET":60,"WAT":60,"CAT":120,"EET":120,"WEST":60,"WET":0,"CEST":120,"SAST":120,"HDT":-540,"HST":-600,"AKDT":-480,"AKST":-540,"AST":-240,"EST":-300,"CDT":-300,"CST":-360,"MDT":-360,"MST":-420,"PDT":-420,"PST":-480,"EDT":-240,"ADT":-180,"NST":-210,"NDT":-150,"NZST":720,"NZDT":780,"EEST":180,"HKT":480,"WIB":420,"WIT":540,"IDT":180,"IST":120,"PKT":300,"WITA":480,"KST":510,"JST":540,"ACST":570,"ACDT":630,"AEST":600,"AEDT":660,"AWST":480,"BST":60,"MSK":180,"SST":-660,"UTC":0,"PT":0,"ET":0,"MT":0,"CT":0};
+const tzaolObj = {"GMT":0,"EAT":180,"CET":60,"WAT":60,"CAT":120,"EET":120,"WEST":60,"WET":0,"CEST":120,"SAST":120,"HDT":-540,"HST":-600,"AKDT":-480,"AKST":-540,"AST":-240,"EST":-300,"CDT":-300,"CST":-360,"MDT":-360,"MST":-420,"PDT":-420,"PST":-480,"EDT":-240,"ADT":-180,"NST":-210,"NDT":-150,"NZST":720,"NZDT":780,"EEST":180,"HKT":480,"WIB":420,"WIT":540,"IDT":180,"IST":120,"PKT":300,"WITA":480,"KST":540,"JST":540,"ACST":570,"ACDT":630,"AEST":600,"AEDT":660,"AWST":480,"BST":60,"MSK":180,"SST":-660,"UTC":0,"PT":0,"ET":0,"MT":0,"CT":0};
 const tzaolStr = Object.keys(tzaolObj).join("|");
 
-const timeRegex = new RegExp('\\b(?:([01]?[0-9]|2[0-3])((:|\\.)[0-5][0-9])?(:[0-5][0-9])?(?: ?([ap]\\.?m?\\.?))? ?(to|until|til|and|[-\u2010-\u2015]) ?\\b)?([01]?[0-9]|2[0-3])((:|\\.)[0-5][0-9])?(:[0-5][0-9])?(?: ?([ap]\\.?m?\\.?) )?(?: ?(' + tzaolStr + '))( ?(?:\\+|-) ?[0-9]{1,2})?\\b', 'giu');
+const timeRegex = new RegExp('\\b(?:([01]?[0-9]|2[0-3])(?::|\\.)?([0-5][0-9])?(:[0-5][0-9])?(?: ?([ap]\\.?m?\\.?))? ?(to|until|til|and|[-\u2010-\u2015]) ?\\b)?([01]?[0-9]|2[0-3])(?::|\\.)?([0-5][0-9])?(:[0-5][0-9])?(?: ?([ap]\\.?m?\\.?) )?(?: ?(' + tzaolStr + '))( ?(?:\\+|-) ?[0-9]{1,2})?\\b', 'giu');
 //[-|\\u{8211}|\\u{8212}|\\u{8213}]
 //Match group enumeration
 const _G = {
 	fullStr: 0,
 
 	startHour: 1,
-	startMinsIncSep: 2,
-	startSeparator: 3,
-	startSeconds: 4,
-	startMeridiem: 5,
+	startMins: 2,
+	startSeconds: 3,
+	startMeridiem: 4,
 
-	timeSeparator: 6,
+	timeSeparator: 5,
 
-	hours: 7,
-	minsIncSep: 8,
-	separator: 9,
-	seconds: 10,
-	meridiem: 11,
-	tzAbr: 12,
-	offset: 13
+	hours: 6,
+	mins: 7,
+	seconds: 8,
+	meridiem: 9,
+	tzAbr: 10,
+	offset: 11
 };
 
-const timeWithoutTZRegex = new RegExp('\\b(?:([01]?[0-9]|2[0-3])((:|\\.)[0-5][0-9])?(:[0-5][0-9])?(?: ?([ap]\\.?m?\\.?))? ?(to|until|til|and|[-\u2010-\u2015]) ?\\b)?([01]?[0-9]|2[0-3])((:|\\.)[0-5][0-9])?(:[0-5][0-9])?(?: ?([ap]\\.?m?\\.?))?\\b', 'giu');
+const timeWithoutTZRegex = new RegExp('\\b(?:([01]?[0-9]|2[0-3])(?::|\\.)?([0-5][0-9])?(:[0-5][0-9])?(?: ?([ap]\\.?m?\\.?))? ?(to|until|til|and|[-\u2010-\u2015]) ?\\b)?([01]?[0-9]|2[0-3])(?::|\\.)?([0-5][0-9])?(:[0-5][0-9])?(?: ?([ap]\\.?m?\\.?))?\\b', 'giu');
 
 const whiteSpaceRegEx = /\s/g;
+
+let haveInsertedStaticCSS = false;
+
+let clockEle;
 
 function lookForTimes(node = document.body, manualTZ) {
 	//Walk the dom looking for text nodes
@@ -70,19 +72,34 @@ function lookForTimes(node = document.body, manualTZ) {
 		//We get an array back, if it has stuff in it then take action
 		if (timeInfo.length === 0) { continue; }
 
+		if (!haveInsertedStaticCSS) {
+			let tmpLink = document.createElement("link");
+			tmpLink.rel = "stylesheet";
+			tmpLink.type = "text/css";
+			tmpLink.href = chrome.runtime.getURL("static.css");
+			document.head.appendChild(tmpLink);
+			haveInsertedStaticCSS = true;
+		}
+
 		let tmpFrag = document.createDocumentFragment();
 		//Insert any text between the start of the string and the first time occurrence
 		tmpFrag.textContent = node.textContent.substr(0, timeInfo[0][2]);
 		//Go through each time we need to replace
-		for (let t = 0; t < timeInfo.length; t++) {
-			let thisTime = timeInfo[t];
+		timeInfo.forEach((thisTime, t) => {
+		//for (let t = 0; t < timeInfo.length; t++) {
+			//let thisTime = timeInfo[t];
 
 			//Create a time to hold this converted time
 			//We were using a span, but many websites have default span styling which might affect page flow
 			let tmpTime = document.createElement("time");
-			tmpTime.style.cursor = "pointer"; //Indicate that it's interactive
-			tmpTime.style.borderBottom = "1px dotted currentColor"; //Modest styling that should fit in with any content
-			tmpTime.textContent = thisTime[0]; //Our converted time
+			tmpTime.setAttribute("class", "localiseTime");
+			tmpTime.appendChild(newClockElement(thisTime[4], thisTime[5]));
+
+			//tmpTime.style.cursor = "pointer"; //Indicate that it's interactive
+			//tmpTime.style.borderBottom = "1px dotted currentColor"; //Modest styling that should fit in with any content
+			let tmpTimeText = document.createElement("span");
+			tmpTimeText.textContent = thisTime[0];
+			tmpTime.appendChild(tmpTimeText); //Our converted time
 			//Let people mouse over the converted time to see what was actually written
 			tmpTime.setAttribute("title", chrome.i18n.getMessage("tooltipConverted", thisTime[1] + (manualTZ ? ' ' + manualTZ : '')));
 			tmpTime.setAttribute("data-localised", thisTime[0]); //Used when toggling
@@ -104,7 +121,7 @@ function lookForTimes(node = document.body, manualTZ) {
 				tmpFrag.appendChild(document.createTextNode(node.textContent.substring(thisTime[2] + thisTime[3])));
 			}
 
-		}
+		})
 		//replace the old text node with our mangled one
 		node.parentElement.replaceChild(tmpFrag, node);
 	}
@@ -117,15 +134,15 @@ function toggleTime(e) {
 	}
 
 	//Which state are we in?
-	if (this.getAttribute("data-original") == this.textContent) {
+	if (this.getAttribute("data-original") == this.children[1].textContent) {
 		let manualTZStr = '';
 		if (this.hasAttribute("data-manualTZ")) {
 			manualTZStr = ' ' + this.getAttribute("data-manualTZ");
 		}
-		this.textContent = this.getAttribute("data-localised");
+		this.children[1].textContent = this.getAttribute("data-localised");
 		this.setAttribute("title", chrome.i18n.getMessage("tooltipConverted", this.getAttribute("data-original") + manualTZStr));
 	} else {
-		this.textContent = this.getAttribute("data-original");
+		this.children[1].textContent = this.getAttribute("data-original");
 		this.setAttribute("title", chrome.i18n.getMessage("tooltipUnconverted", this.getAttribute("data-localised")));
 	}
 
@@ -238,7 +255,7 @@ function spotTime(str, dateObj, manualTZ) {
 		if (manualTZ) {
 			//We need to be stricter on what times we detect when dealing with manual conversion
 			//Otherwise we'll have a lot of false positives!
-			if (!match[_G.minsIncSep] && !match[_G.meridiem]) { continue; }
+			if (!match[_G.mins] && !match[_G.meridiem]) { continue; }
 			upperTZ = manualTZ;
 			match[_G.tzAbr] = manualTZ;
 		} else {
@@ -255,13 +272,13 @@ function spotTime(str, dateObj, manualTZ) {
 
 		if (str[match.index - 1] === ":" || str[match.index - 1] === ".") { continue; }
 
-		if (match[_G.tzAbr] === 'pt' && !(match[_G.meridiem] || match[_G.minsIncSep])) { continue; } //Temporary quirk to avoid matching font sizes
+		if (match[_G.tzAbr] === 'pt' && !(match[_G.meridiem] || match[_G.mins])) { continue; } //Temporary quirk to avoid matching font sizes
 
 		//Avoid cat and eat false positives
-		if ((match[_G.tzAbr] !== 'CAT' || match[_G.tzAbr] !== 'EAT') && !(match[_G.meridiem] || match[_G.minsIncSep])) { continue; }
+		if ((match[_G.tzAbr] !== 'CAT' || match[_G.tzAbr] !== 'EAT') && !(match[_G.meridiem] || match[_G.mins])) { continue; }
 
 		let tHour = +match[_G.hours];
-		if (tHour == 0 && !match[_G.minsIncSep]) { continue; } //Bail if the hour is 0 and we have no minutes. (We could assume midnight)
+		if (tHour == 0 && !match[_G.mins]) { continue; } //Bail if the hour is 0 and we have no minutes. (We could assume midnight)
 		if (match[_G.meridiem]) {
 			tHour = (12 + tHour) % 12;
 			if (match[_G.meridiem][0].toLowerCase() == 'p') {
@@ -271,8 +288,8 @@ function spotTime(str, dateObj, manualTZ) {
 			//Non-exhaustive tHour/startHour test - This probably needs fleshing out?
 			tHour += 12;
 		}
-		let tMins = (match[_G.minsIncSep] ? match[_G.minsIncSep] : ':00');
-		let tMinsFromMidnight = h2m(tHour + tMins, match[_G.separator]);
+		let tMins = (match[_G.mins] ? match[_G.mins] : 0);
+		let tMinsFromMidnight = h2m(tHour, tMins);
 		let hourOffset = 0;
 		//Sometimes people write a tz and then +X (like UTC+1)
 		if (match[_G.offset]) {
@@ -299,6 +316,8 @@ function spotTime(str, dateObj, manualTZ) {
 		let localeTimeString = tmpDate.toLocaleTimeString(
 			undefined, timeFormat
 		);
+
+		let SVGTimes = [ ...tmpExplode ];
 
 		let localeStartTimeString = '';
 
@@ -332,8 +351,8 @@ function spotTime(str, dateObj, manualTZ) {
 				}
 			}
 			//if (startHour > tHour) { console.warn("Invalid time range.", startHour, tHour); }
-			let startMins = (match[_G.startMinsIncSep] ? match[_G.startMinsIncSep] : ':00');
-			let startMinsFromMidnight = h2m(startHour + startMins, match[_G.startSeparator]);
+			let startMins = (match[_G.startMins] ? match[_G.startMins] : 0);
+			let startMinsFromMidnight = h2m(startHour, startMins);
 
 			let startCorrected = startMinsFromMidnight - tzaolObj[upperTZ] + hourOffset;
 			startCorrected -= dateObj.getTimezoneOffset();
@@ -349,10 +368,10 @@ function spotTime(str, dateObj, manualTZ) {
 				match[_G.startSeconds] ? match[_G.startSeconds].substring(1) : 0
 			);
 			//Match the granularity of the output to the input
-			let timeFormat = { hour: 'numeric' };
-			if (match[_G.startMinsIncSep]) {
+			let timeFormat = { hour: 'numeric', minute: 'numeric' };
+			/*if (match[_G.startMins]) {
 				timeFormat.minute = 'numeric';
-			}
+			}*/
 			if (match[_G.startSeconds]) {
 				timeFormat.second = 'numeric';
 			}
@@ -361,10 +380,12 @@ function spotTime(str, dateObj, manualTZ) {
 				undefined, timeFormat
 			) + " " + (match[_G.timeSeparator].length === 1 ? "–" : match[_G.timeSeparator]) + " ";//' – ';
 			//Should we capture the user defined separator and reuse it? - Yes, and we are now.
+
+			SVGTimes = [ ...tmpExplode ];
 		}
 
 		//Store the localised time, the time that we matched, its offset and length
-		timeInfo.push([localeStartTimeString + localeTimeString, match[_G.fullStr], match.index, match[_G.fullStr].length]);
+		timeInfo.push([localeStartTimeString + localeTimeString, match[_G.fullStr], match.index, match[_G.fullStr].length, ...SVGTimes]);
 	}
 
 	return timeInfo;
@@ -379,8 +400,53 @@ function m2h(mins) {
 	var tmp = h + ":" + m;
 	return tmp;
 }
-function h2m(hours, separator = ':') {
-	var t = (String)(hours).split(separator);
-	var tmp = (t[0] * 60) + +t[1];
-	return tmp;
+function h2m(hours, mins) {
+	return (+hours * 60) + +mins;
+}
+
+function buildClockElement() {
+	if (clockEle) {
+		return clockEle.cloneNode(true);
+	}
+
+	const xmlns = "http://www.w3.org/2000/svg";
+
+	clockEle = document.createElementNS(xmlns, "svg");
+	clockEle.setAttributeNS(null, "viewBox", "0 0 16 16");
+	clockEle.setAttributeNS(null, "width", ".8em");
+
+	let g = document.createElementNS(xmlns, "g");
+	g.setAttributeNS(null, "fill", "none");
+	g.setAttributeNS(null, "stroke", "currentColor");
+	g.setAttributeNS(null, "stroke-width", 1.5);
+
+	let circle = document.createElementNS(xmlns, "circle");
+	circle.setAttributeNS(null, "cx", 8);
+	circle.setAttributeNS(null, "cy", 8);
+	circle.setAttributeNS(null, "r", 7.25);
+	circle.setAttributeNS(null, "stroke-linejoin", "round");
+	g.appendChild(circle);
+
+	let path = document.createElementNS(xmlns, "path");
+	path.setAttributeNS(null, "stroke-linecap", "round");
+	path.setAttributeNS(null, "stroke-linejoin", "round");
+	path.setAttributeNS(null, "d", "M8 3v5m2.31 1.91L8 8");
+	g.appendChild(path);
+
+	clockEle.appendChild(g);
+
+	return clockEle.cloneNode(true);
+}
+
+function newClockElement(inHours = 4, inMinutes = 0, inSeconds = 0) {
+	const newClock = buildClockElement();
+
+	const hour = ((inHours % 12) * Math.PI / 6) + (inMinutes * Math.PI / (6 * 60)) + (inSeconds * Math.PI / (360 * 60)) - (Math.PI / 2);
+	const minute = (inMinutes * Math.PI / 30) + (inSeconds * Math.PI / (30 * 60)) - (Math.PI / 2);
+
+	const newPath = `M${Math.cos(hour) * 3 + 8} ${Math.sin(hour) * 3 + 8}L8 8L${Math.cos(minute) * 5 + 8} ${Math.sin(minute) * 5 + 8}`;
+
+	newClock.children[0].children[1].setAttribute("d", newPath);
+
+	return newClock;
 }
