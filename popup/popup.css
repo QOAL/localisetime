@@ -1,3 +1,18 @@
+:root {
+	--bg-col-hex: #272335;
+	--green-rgb: 48,203,156;
+	--red-rgb: 207,52,99;
+}
+
+::-webkit-scrollbar { background-color: #1b1825; }
+::-webkit-scrollbar-thumb { background-color: #f0f0f0; }
+
+body {
+	background-color: var(--bg-col-hex);
+	margin: 0px !important;
+	border: none !important;
+}
+
 #localiseTimesPopup {
 	border: 2px solid #1b1825;
 	padding: 10px;
@@ -5,7 +20,7 @@
 	font-family: -apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif;
 	font-size: medium;
 	color: #f0f0f0;	
-	background: #272335;
+	background-color: var(--bg-col-hex);
 	overflow: hidden;
 	line-height: 1.333;
 	white-space: nowrap;
@@ -29,7 +44,7 @@ select, button, h3 {
 h3 {
 	font-size: large;
 	font-weight: 600;
-	background-image: linear-gradient(35deg, #cf3463 54%, #30cb9c 55%);
+	background-image: linear-gradient(35deg, rgba(var(--red-rgb), 1) 54%, rgba(var(--green-rgb), 1) 55%);
 	margin: -10px -10px 10px -10px;
 	padding: 5px 0;
 	text-shadow: 1px 1px 0 rgba(0,0,0,.333);
@@ -51,28 +66,50 @@ h5 {
 select {
 	flex: 1 1 auto;
 	cursor: pointer;
-	margin-right: 20px;
-	background: #512740;
+	background-color: rgba(var(--red-rgb), .25);
 	border: none;
 	/*scrollbar-width: thin;*/
 	scrollbar-color: #f0f0f0 #1b1825;
 	border-radius: 2.5px;
+	-moz-appearance: none;
+	appearance: none;
+	padding-left: 10px;
 }
 select:hover, select:focus {
-	background: #7b2b4c;
-	border-color: #cf3463;
+	background-color: rgba(var(--red-rgb), .5);
 }
 select:active {
-	background: #cf3463;
+	background-color: rgba(var(--red-rgb), 1);
+}
+.selectLabel {
+	position: relative;
+	margin-right: 20px;
+	display: flex;
+	flex: 1 1 auto;
+	align-items: stretch;
+}
+.selectLabel div {
+	position: absolute;
+	right: 10px;
+	top: 50%;
+	transform: translateY(-50%);
+	pointer-events: none;
+	clip-path: path('M1.03 0a1 1 0 00-.74.3 1 1 0 000 1.4l7 7a1 1 0 001.42 0l7-7a1 1 0 000-1.4 1 1 0 00-1.42 0L8 6.58 1.7.29A1 1 0 001.04 0z');
+	width: 16px;
+	height: 9px;
+	background-color: currentColor;
+}
+.selectLabel select:active + div {
+	transform: translateY(calc(-50% + 1px));
 }
 
 option {
 	padding: 3px 5px;
-	background: #272335;
+	background: var(--bg-col-hex);
 }
 
 button {
-	background: #294d4e;
+	background: rgba(var(--green-rgb), .25);
 	border: none;
 	border-radius: 2.5px;
 	padding: 4px 16px;
@@ -81,12 +118,11 @@ button {
 	font-weight: 600;
 }
 button:focus, button:hover {
-	background: #2b7768;
-	border-color: #30cb9c;
+	background: rgba(var(--green-rgb), .5);
 }
 button:active {
-	background: #30cb9c;
-	color: #1b1825;
+	background: rgba(var(--green-rgb), 1);
+	/*color: #1b1825;*/
 }
 
 button span {
@@ -95,6 +131,7 @@ button span {
 }
 button:active span {
 	transform: translateY(1px);
+	text-shadow: 1px 1px 0 rgba(0,0,0,.333);
 }
 
 .blockedHere #normalContent, #blockedHereContent {

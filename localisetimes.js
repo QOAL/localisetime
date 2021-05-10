@@ -62,7 +62,7 @@ function lookForTimes(node = document.body, manualTZ) {
 		if (skipThis) { continue; }
 
 		//If we're manually converting times then avoid any existing times that have been converted
-		if (manualTZ && node.parentElement.hasAttribute("data-localised")) { continue; }
+		if (manualTZ && node.parentElement.parentElement.hasAttribute("data-localised")) { continue; }
 
 		//Ignore any text nodes that are purely white space
 		if (node.nodeValue.trim().length === 0) { continue; }
@@ -206,8 +206,9 @@ init();
 
 //Listen for, and process, any relevant messages being passed from the popup menu (browser_action)
 function contentMessageListener(request, sender, sendResponse) {
-	if (!request.convert) { return }
-	lookForTimes(document.body, request.convert);
+	if (request.hasOwnProperty('convert')) {
+		lookForTimes(document.body, request.convert);
+	}
 }
 chrome.runtime.onMessage.addListener(contentMessageListener);
 
