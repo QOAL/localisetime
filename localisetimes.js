@@ -3,28 +3,30 @@
 const tzaolObj = {"GMT":0,"EAT":180,"CET":60,"WAT":60,"CAT":120,"EET":120,"WEST":60,"WET":0,"CEST":120,"SAST":120,"HDT":-540,"HST":-600,"AKDT":-480,"AKST":-540,"AST":-240,"EST":-300,"CDT":-300,"CST":-360,"MDT":-360,"MST":-420,"PDT":-420,"PST":-480,"EDT":-240,"ADT":-180,"NST":-210,"NDT":-150,"NZST":720,"NZDT":780,"EEST":180,"HKT":480,"WIB":420,"WIT":540,"IDT":180,"IST":120,"PKT":300,"WITA":480,"KST":540,"JST":540,"ACST":570,"ACDT":630,"AEST":600,"AEDT":660,"AWST":480,"BST":60,"MSK":180,"SST":-660,"UTC":0,"PT":0,"ET":0,"MT":0,"CT":0};
 const tzaolStr = Object.keys(tzaolObj).join("|");
 
-const timeRegex = new RegExp('\\b(?:([01]?[0-9]|2[0-3])(?::|\\.)?([0-5][0-9])?(:[0-5][0-9])?(?: ?([ap]\\.?m?\\.?))? ?(to|until|til|and|[-\u2010-\u2015]) ?\\b)?([01]?[0-9]|2[0-3])(?::|\\.)?([0-5][0-9])?(:[0-5][0-9])?(?: ?([ap]\\.?m?\\.?) )?(?: ?(' + tzaolStr + '))( ?(?:\\+|-) ?[0-9]{1,2})?\\b', 'giu');
+const timeRegex = new RegExp('\\b(?:([01]?[0-9]|2[0-3])(:|\\.)?([0-5][0-9])?(:[0-5][0-9])?(?: ?([ap]\\.?m?\\.?))? ?(to|until|til|and|[-\u2010-\u2015]) ?\\b)?([01]?[0-9]|2[0-3])(:|\\.)?([0-5][0-9])?(:[0-5][0-9])?(?: ?([ap]\\.?m?\\.?) )?(?: ?(' + tzaolStr + '))( ?(?:\\+|-) ?[0-9]{1,2})?\\b', 'giu');
 //[-|\\u{8211}|\\u{8212}|\\u{8213}]
 //Match group enumeration
 const _G = {
 	fullStr: 0,
 
 	startHour: 1,
-	startMins: 2,
-	startSeconds: 3,
-	startMeridiem: 4,
+	startSeparator: 2,
+	startMins: 3,
+	startSeconds: 4,
+	startMeridiem: 5,
 
-	timeSeparator: 5,
+	timeSeparator: 6,
 
-	hours: 6,
-	mins: 7,
-	seconds: 8,
-	meridiem: 9,
-	tzAbr: 10,
-	offset: 11
+	hours: 7,
+	separator: 8,
+	mins: 9,
+	seconds: 10,
+	meridiem: 11,
+	tzAbr: 12,
+	offset: 13
 };
 
-const timeWithoutTZRegex = new RegExp('\\b(?:([01]?[0-9]|2[0-3])(?::|\\.)?([0-5][0-9])?(:[0-5][0-9])?(?: ?([ap]\\.?m?\\.?))? ?(to|until|til|and|[-\u2010-\u2015]) ?\\b)?([01]?[0-9]|2[0-3])(?::|\\.)?([0-5][0-9])?(:[0-5][0-9])?(?: ?([ap]\\.?m?\\.?))?\\b', 'giu');
+const timeWithoutTZRegex = new RegExp('\\b(?:([01]?[0-9]|2[0-3])(:|\\.)?([0-5][0-9])?(:[0-5][0-9])?(?: ?([ap]\\.?m?\\.?))? ?(to|until|til|and|[-\u2010-\u2015]) ?\\b)?([01]?[0-9]|2[0-3])(:|\\.)?([0-5][0-9])?(:[0-5][0-9])?(?: ?([ap]\\.?m?\\.?))?\\b', 'giu');
 
 const whiteSpaceRegEx = /\s/g;
 
@@ -274,6 +276,8 @@ function spotTime(str, dateObj, manualTZ) {
 		if (str[match.index - 1] === ":" || str[match.index - 1] === ".") { continue; }
 
 		if (match[_G.tzAbr] === 'pt' && !(match[_G.meridiem] || match[_G.mins])) { continue; } //Temporary quirk to avoid matching font sizes
+
+		if (match[_G.tzAbr] === 'ist' && !(match[_G.separator] || match[_G.meridiem])) { continue; } //IST must be capitalised, if there's no separator
 
 		//Avoid cat and eat false positives
 		if ((match[_G.tzAbr] !== 'CAT' || match[_G.tzAbr] !== 'EAT') && !(match[_G.meridiem] || match[_G.mins])) { continue; }

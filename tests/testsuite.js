@@ -44,6 +44,7 @@ const tests = [
 	["1 cat just isn't enough", [undefined]],
 	["02:37 KST", ["18:37"]],
 	["2100 CEST", ["20:00"]],
+	["Sie sagt bei einer Inzidenz von unter 140 ist es...", [undefined]],
 ]
 let passCount = 0
 
