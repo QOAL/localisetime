@@ -10,12 +10,12 @@
 	},
 
 	"popupManualConvert": {
-		"message": "Manually convert times missing a stated time zone.",
+		"message": "Manually convert times missing a stated time zone",
 		"description": "Manual conversion feature text"
 	},
 
 	"popupManualConvertSourceText": {
-		"message": "Please select the source time zone.",
+		"message": "Please select the source time zone:",
 		"description": "Manual conversion usage hint"
 	},
 
@@ -23,6 +23,37 @@
 		"message": "OK",
 		"description": "OK"
 	},
+
+	"popupSandboxMode": {
+		"message": "Sandbox",
+		"description": "Name of the sandbox mode"
+	},
+
+	"popupWebpageMode": {
+		"message": "Webpage",
+		"description": "Name of the webpage mode"
+	},
+
+	"popupSandboxText": {
+		"message": "Time localisation sandbox",
+		"description": "Sandbox time conversion feature text"
+	},
+
+	"popupSandboxTextarea": {
+		"message": "Enter some text here",
+		"description": "Place holder text for the sandbox's textarea"
+	},
+
+	"popupSandboxConvertTimesTo": {
+		"message": "Convert times to:",
+		"description": "Label text for the sandbox's timezone selection list"
+	},
+
+	"popupLocalTime": {
+		"message": "Local Time",
+		"description": "Option text for converting to the user's local time"
+	},
+
 
 	"popupUnableToFunction": {
 		"message": "The extension is unable to function on this page.",

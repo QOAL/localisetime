@@ -6,14 +6,31 @@
 		<script src="popup.js"></script>
 	</head>
 	<body>
-		<div id="localiseTimesPopup">
-			<h3>Localise Times</h3>
+		<h3>Localise Times
+			<button id="sandboxPage">
+				<div><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 9 16" width="7">
+					<path fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M1.5 14.5l6-6.5-6-6.5"/>
+				</svg><span id="sandboxPageStr">Sandbox</span></div>
+			</button>
+		</h3>
+		<div>
 			<div id="normalContent">
-				<h5 id="manualText">Manually convert times missing a stated time zone.</h5>
-				<span id="manualUsageHint">Please select the source time zone.</span>
-				<div id="selectOKCont">
-					<label class="selectLabel"><select id="tzList"><option value="UTC" selected>UTC (UTC+00:00)</option></select><div></div></label>
-					<button id="useSelectedTimezone"><span>OK</span></button>
+				<div id="webpageMode" class="page visible">
+					<h5 id="manualText">Manually convert times missing a stated time zone</h5>
+					<span id="manualUsageHint">Please select the source time zone:</span>
+					<div id="selectOKCont">
+						<label class="selectLabel"><select id="tzList"><option value="UTC" selected>UTC (UTC+00:00)</option></select><div></div></label>
+						<button id="useSelectedTimezone"><div class="okText">OK</div></button>
+					</div>
+				</div>
+				<div id="sandboxMode" class="page">
+					<h5 id="sandboxText">Time localisation sandbox</h5>
+					<textarea id="sandboxTextarea" placeholder="Enter some text here"></textarea>
+					<span id="sandboxConvertTimesTo">Convert times to:</span>
+					<div id="selectOKCont">
+						<label class="selectLabel"><select id="tzListSandbox"><option value="UTC" selected>UTC (UTC+00:00)</option></select><div></div></label>
+						<button id="sandboxConvertBtn"><div class="okText">OK</div></button>
+					</div>
 				</div>
 			</div>
 			<div id="blockedHereContent">

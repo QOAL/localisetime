@@ -1,5 +1,6 @@
 :root {
 	--bg-col-hex: #272335;
+	--bg-col-rgb: 39,35,53;
 	--green-rgb: 48,203,156;
 	--red-rgb: 207,52,99;
 }
@@ -7,14 +8,11 @@
 ::-webkit-scrollbar { background-color: #1b1825; }
 ::-webkit-scrollbar-thumb { background-color: #f0f0f0; }
 
-body {
-	background-color: var(--bg-col-hex);
-	margin: 0px !important;
-	border: none !important;
-}
+html { overflow: hidden; scrollbar-width: none; }
 
-#localiseTimesPopup {
-	border: 2px solid #1b1825;
+body {
+	margin: 0px !important;
+	border: 2px solid #1b1825 !important;
 	padding: 10px;
 	z-index: 99;
 	font-family: -apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif;
@@ -38,18 +36,67 @@ select, button, h3 {
 	font-size: inherit;
 	color: inherit;
 	line-height: 1.333;
+	outline: none;
 }
 
 
 h3 {
 	font-size: large;
 	font-weight: 600;
-	background-image: linear-gradient(35deg, rgba(var(--red-rgb), 1) 54%, rgba(var(--green-rgb), 1) 55%);
+	background-image: linear-gradient(35deg, rgba(var(--red-rgb), 1) 54%, rgba(var(--green-rgb), 1) calc(54% + 1px));
 	margin: -10px -10px 10px -10px;
-	padding: 5px 0;
+	padding: 2px;
 	text-shadow: 1px 1px 0 rgba(0,0,0,.333);
-	text-indent: 10px;
+	text-indent: 8px;
 	letter-spacing: 1px;
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+}
+
+#normalContent {
+	display: flex;
+	flex-direction: column;
+	/*transition: height .25s ease-in-out, width .25s ease-in-out;*/
+	overflow: hidden;
+	position: relative;
+}
+
+.page {
+	flex: 0 0 0;
+	overflow: hidden;
+	position: relative;
+}
+.page.visible {
+	flex: 1 1 auto;
+}
+.page.goingAway {
+	z-index: 10;
+	animation: fade .25s ease-in-out;
+	position: absolute;
+	top: 0;
+	opacity: 0;
+	background-color: var(--bg-col-hex);
+}
+@keyframes fade {
+	0% { opacity: 100%; }
+	100% { opacity: 0; }
+}
+.updateText {
+	animation: translateOut .125s ease-out;
+	display: inline-block;
+}
+.updateText2 {
+	animation: translateIn .125s ease-in;
+	display: inline-block;
+}
+@keyframes translateOut {
+	0% { transform: translateY(0); }
+	100% { transform: translateY(-100%); }
+}
+@keyframes translateIn {
+	0% { transform: translateY(100%); }
+	100% { transform: translateY(0); }
 }
 
 h5 {
@@ -109,7 +156,7 @@ option {
 }
 
 button {
-	background: rgba(var(--green-rgb), .25);
+	background-color: rgba(var(--green-rgb), .25);
 	border: none;
 	border-radius: 2.5px;
 	padding: 4px 16px;
@@ -118,21 +165,81 @@ button {
 	font-weight: 600;
 }
 button:focus, button:hover {
-	background: rgba(var(--green-rgb), .5);
+	background-color: rgba(var(--green-rgb), .5);
 }
 button:active {
-	background: rgba(var(--green-rgb), 1);
+	background-color: rgba(var(--green-rgb), 1);
 	/*color: #1b1825;*/
 }
 
-button span {
-	display: block;
+button div {
 	transform: translateY(0);
 }
-button:active span {
+button:active div {
 	transform: translateY(1px);
 	text-shadow: 1px 1px 0 rgba(0,0,0,.333);
 }
+
+h3 button {
+	background: rgba(var(--bg-col-rgb), 1);
+	font-size: medium;
+	padding: 4px 10px;
+	overflow: hidden;
+}
+h3 button:focus, h3 button:hover {
+	background-color: #7b2c4c;
+	/*
+		Sadly we can't mix colours with CSS just yet, so this is a premixed value
+		https://developer.mozilla.org/en-US/docs/Web/CSS/color_value/color-mix()
+	*/
+}
+h3 button:active {
+	background-color: rgba(var(--red-rgb), 1);
+}
+button svg {
+	margin-right: 8px;
+}
+
+textarea {
+	display: block;
+	resize: none;
+	flex: 1 1 auto;
+	border-radius: 2.5px;
+	background-color: transparent;
+	font-family: inherit;
+	color: inherit;
+	font-size: large;
+	width: 100%;
+	padding: 5px;
+	margin: 10px 0;
+	outline: none;
+    box-sizing: border-box;
+
+	background-origin: padding-box, border-box;
+	background-clip: padding-box, border-box;
+	border: 2px solid transparent;
+	--left-opacity: .5;
+	--right-opacity: .5;
+	background-image:
+		linear-gradient(var(--bg-col-hex),var(--bg-col-hex)),
+		linear-gradient(35deg, rgba(var(--red-rgb), var(--left-opacity)) 50%, rgba(var(--green-rgb), var(--right-opacity)) calc(50% + 1px));
+}
+textarea:hover {
+	--left-opacity: 1;
+	--right-opacity: .5;
+}
+textarea:focus {
+	--left-opacity: 1;
+	--right-opacity: 1;
+}
+textarea::selection {
+	color: currentColor;/*var(--bg-col-hex);*/
+	background: rgba(var(--red-rgb), 1);
+	text-shadow: none;
+}
+
+.blockedHere h3 button { display: none; }
+.blockedHere h3 { padding: 4.5px 2px; }
 
 .blockedHere #normalContent, #blockedHereContent {
 	display: none;

@@ -209,12 +209,24 @@ init();
 //Listen for, and process, any relevant messages being passed from the popup menu (browser_action)
 function contentMessageListener(request, sender, sendResponse) {
 	if (request.hasOwnProperty('convert')) {
+
 		lookForTimes(document.body, request.convert);
+
+	} else if (request.hasOwnProperty('sandbox')) {
+
+		const userText = request.sandbox.text;
+		const userTimezone = request.sandbox.timezone;
+
+		const dateObj = new Date();
+		const correctedOffset = tzaolObj.hasOwnProperty(userTimezone) ? tzaolObj[userTimezone] : undefined;
+		let timeInfo = spotTime(userText, dateObj, undefined, correctedOffset);
+
+		sendResponse(timeInfo);
 	}
 }
 chrome.runtime.onMessage.addListener(contentMessageListener);
 
-function spotTime(str, dateObj, manualTZ) {
+function spotTime(str, dateObj, manualTZ, correctedOffset) {
 	/*
 		A well thought out version of this would take into account for info
 		Such as words used in the tweet which might imply a date
@@ -301,7 +313,11 @@ function spotTime(str, dateObj, manualTZ) {
 			hourOffset = -(match[_G.offset].replace(whiteSpaceRegEx, '')) * 60;
 		}
 		let tCorrected = tMinsFromMidnight - tzaolObj[upperTZ] + hourOffset;
-		tCorrected -= dateObj.getTimezoneOffset();
+		if (correctedOffset) {
+			tCorrected += correctedOffset;
+		} else {
+			tCorrected -= dateObj.getTimezoneOffset();
+		}
 		if (tCorrected < 0) { tCorrected += 1440; }
 		//Build the localised time
 		let tmpExplode = m2h(tCorrected).split(":");
