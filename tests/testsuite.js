@@ -45,6 +45,8 @@ const tests = [
 	["02:37 KST", ["18:37"]],
 	["2100 CEST", ["20:00"]],
 	["Sie sagt bei einer Inzidenz von unter 140 ist es...", [undefined]],
+	["Die Studiotechnik für 720p ist noch nicht abgeschrieben.", [undefined]],
+	["720p IST, 720pm ist", ["14:50", "14:50"]],
 ]
 let passCount = 0
 
