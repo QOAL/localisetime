@@ -34,6 +34,9 @@ let haveInsertedStaticCSS = false;
 
 let clockEle;
 
+//Check the users (first 3) accepted languages, if one is German, then enforce IST being in upper case only as a time zone abbreviation.
+const needsUppercaseIST = typeof window === "undefined" ? false : navigator.languages.findIndex((l,i) => i < 3 && l.split("-")[0] === "de")
+
 function lookForTimes(node = document.body, manualTZ) {
 	//Walk the dom looking for text nodes
 	var walker = document.createTreeWalker(node, NodeFilter.SHOW_TEXT);
@@ -290,6 +293,8 @@ function spotTime(str, dateObj, manualTZ, correctedOffset) {
 		if (match[_G.tzAbr] === 'pt' && !(match[_G.meridiem] || match[_G.mins])) { continue; } //Temporary quirk to avoid matching font sizes
 
 		if (match[_G.tzAbr] === 'ist' && !(match[_G.separator] || (match[_G.meridiem] && match[_G.meridiem] !== 'p'))) { continue; } //IST must be capitalised, if there's no separator
+		//Only people with German in their first 3 accepted languages will use this path, it's to avoid issues with the word "ist"
+		if (needsUppercaseIST && match[_G.tzAbr] === 'ist' && (!match[_G.meridiem] || match[_G.meridiem].length !== 2)) { continue; }
 
 		//Avoid cat and eat false positives
 		if ((match[_G.tzAbr] !== 'CAT' || match[_G.tzAbr] !== 'EAT') && !(match[_G.meridiem] || match[_G.mins])) { continue; }

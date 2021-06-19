@@ -47,6 +47,7 @@ const tests = [
 	["Sie sagt bei einer Inzidenz von unter 140 ist es...", [undefined]],
 	["Die Studiotechnik für 720p ist noch nicht abgeschrieben.", [undefined]],
 	["720p IST, 720pm ist", ["14:50", "14:50"]],
+	["Der Schuss bei 1:14 ist sehr schoen abgestimmt. 10/10.", ["20:44"]]
 ]
 let passCount = 0
 
