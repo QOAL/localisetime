@@ -35,7 +35,7 @@ let haveInsertedStaticCSS = false;
 let clockEle;
 
 //Check the users (first 3) accepted languages, if one is German, then enforce IST being in upper case only as a time zone abbreviation.
-const needsUppercaseIST = typeof window === "undefined" ? false : navigator.languages.findIndex((l,i) => i < 3 && l.split("-")[0] === "de")
+const needsUppercaseIST = typeof window === "undefined" ? false : navigator.languages.findIndex((l,i) => i < 3 && l.split("-")[0] === "de") !== -1
 
 function lookForTimes(node = document.body, manualTZ) {
 	//Walk the dom looking for text nodes
