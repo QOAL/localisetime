@@ -3,7 +3,7 @@
 const tzaolObj = {"GMT":0,"EAT":180,"CET":60,"WAT":60,"CAT":120,"EET":120,"WEST":60,"WET":0,"CEST":120,"SAST":120,"HDT":-540,"HST":-600,"AKDT":-480,"AKST":-540,"AST":-240,"EST":-300,"CDT":-300,"CST":-360,"MDT":-360,"MST":-420,"PDT":-420,"PST":-480,"EDT":-240,"ADT":-180,"NST":-210,"NDT":-150,"NZST":720,"NZDT":780,"EEST":180,"HKT":480,"WIB":420,"WIT":540,"IDT":180,"IST":330,"PKT":300,"WITA":480,"KST":540,"JST":540,"ACST":570,"ACDT":630,"AEST":600,"AEDT":660,"AWST":480,"BST":60,"MSK":180,"SST":-660,"UTC":0,"PT":0,"ET":0,"MT":0,"CT":0};
 const tzaolStr = Object.keys(tzaolObj).join("|");
 
-const timeRegex = new RegExp('\\b(?:([01]?[0-9]|2[0-3])(:|\\.)?([0-5][0-9])?(:[0-5][0-9])?(?: ?([ap]\\.?m?\\.?))? ?(to|until|til|and|[-\u2010-\u2015]) ?\\b)?([01]?[0-9]|2[0-3])(:|\\.)?([0-5][0-9])?(:[0-5][0-9])?(?: ?([ap]\\.?m?\\.?) )?(?: ?(' + tzaolStr + '))( ?(?:\\+|-) ?[0-9]{1,2})?\\b', 'giu');
+const timeRegex = new RegExp('\\b(?:([01]?\d|2[0-3])(:|\\.|h)?([0-5]\d)?(:[0-5]\d)?(?: ?([ap]\\.?m?\\.?))? ?(to|until|til|and|[-\u2010-\u2015]) ?\\b)?([01]?\d|2[0-3])(:|\\.|h)?([0-5]\d)?(:[0-5]\d)?(?: ?([ap]\\.?m?\\.?) )?(?: ?(' + tzaolStr + '))( ?(?:\\+|-) ?\d{1,2})?\\b', 'giu');
 //[-|\\u{8211}|\\u{8212}|\\u{8213}]
 //Match group enumeration
 const _G = {
@@ -26,7 +26,7 @@ const _G = {
 	offset: 13
 };
 
-const timeWithoutTZRegex = new RegExp('\\b(?:([01]?[0-9]|2[0-3])(:|\\.)?([0-5][0-9])?(:[0-5][0-9])?(?: ?([ap]\\.?m?\\.?))? ?(to|until|til|and|[-\u2010-\u2015]) ?\\b)?([01]?[0-9]|2[0-3])(:|\\.)?([0-5][0-9])?(:[0-5][0-9])?(?: ?([ap]\\.?m?\\.?))?\\b', 'giu');
+const timeWithoutTZRegex = /\b(?:([01]?\d|2[0-3])(:|\.|h)?([0-5]\d)?(:[0-5]\d)?(?: ?([ap]\.?m?\.?))? ?(to|until|til|and|[-\u2010-\u2015]) ?\b)?([01]?\d|2[0-3])(:|\.|h)?([0-5]\d)?(:[0-5]\d)?(?: ?([ap]\.?m?\.?))?\b/giu;
 
 const whiteSpaceRegEx = /\s/g;
 
@@ -281,14 +281,15 @@ function spotTime(str, dateObj, manualTZ, correctedOffset) {
 		}
 
 		//Check that we have a match, with a valid timezone.
-		if (!match[_G.tzAbr] || typeof tzaolObj[upperTZ] == "undefined") { continue; }
+		if (!match[_G.tzAbr] || typeof tzaolObj[upperTZ] === "undefined") { continue; }
 		//Demand the timezone abbreviation be all the same case
 		if (!(match[_G.tzAbr] === upperTZ || match[_G.tzAbr] === match[_G.tzAbr].toLowerCase())) { continue; }
 
 		//We need to change the start of the regex to... maybe (^|\s)
 		//The issue here is that : matches the word boundary, and if the input is "30:15 gmt" then it'll match "15 gmt"
 
-		if (str[match.index - 1] === ":" || str[match.index - 1] === ".") { continue; }
+		//if (str[match.index - 1] === ":" || str[match.index - 1] === ".") { continue; }
+		if (str.substr(match.index - 1, 1) === ":" || str.substr(match.index - 1, 1) === ".") { continue; }
 
 		if (match[_G.tzAbr] === 'pt' && !(match[_G.meridiem] || match[_G.mins])) { continue; } //Temporary quirk to avoid matching font sizes
 
@@ -334,14 +335,7 @@ function spotTime(str, dateObj, manualTZ, correctedOffset) {
 			tmpExplode[1],
 			match[_G.seconds] ? match[_G.seconds].substring(1) : 0
 		);
-		//Match the granularity of the output to the input
-		let timeFormat = { hour: 'numeric', minute: 'numeric' };
-		if (match[_G.seconds]) {
-			timeFormat.second = 'numeric';
-		}
-		let localeTimeString = tmpDate.toLocaleTimeString(
-			undefined, timeFormat
-		);
+		let localeTimeString = formatLocalisedTime(tmpDate, match[_G.seconds])
 
 		let SVGTimes = [ ...tmpExplode ];
 
@@ -402,9 +396,7 @@ function spotTime(str, dateObj, manualTZ, correctedOffset) {
 				timeFormat.second = 'numeric';
 			}
 			//It would be nice to avoid including the meridiem if it's the same as the main time
-			localeStartTimeString = tmpDate.toLocaleTimeString(
-				undefined, timeFormat
-			) + " " + (match[_G.timeSeparator].length === 1 ? "–" : match[_G.timeSeparator]) + " ";//' – ';
+			localeStartTimeString = formatLocalisedTime(tmpDate, match[_G.startSeconds]) + " " + (match[_G.timeSeparator].length === 1 ? "–" : match[_G.timeSeparator]) + " ";//' – ';
 			//Should we capture the user defined separator and reuse it? - Yes, and we are now.
 
 			SVGTimes = [ ...tmpExplode ];
@@ -428,6 +420,16 @@ function m2h(mins) {
 }
 function h2m(hours, mins) {
 	return (+hours * 60) + +mins;
+}
+function formatLocalisedTime(tmpDate, withSeconds) {
+	// Lazily create the DateTimeFormat object that we need
+	if (withSeconds && !dateTimeFormats[1]) {
+		dateTimeFormats[1] = new Intl.DateTimeFormat(undefined, { hour: 'numeric', minute: 'numeric', second: 'numeric' });
+	} else if (!dateTimeFormats[0]) {
+		dateTimeFormats[0] = new Intl.DateTimeFormat(undefined, { hour: 'numeric', minute: 'numeric' });
+	}
+	// Match the granularity of the output to the input
+	return dateTimeFormats[withSeconds ? 1 : 0].format(tmpDate)	
 }
 
 function buildClockElement() {

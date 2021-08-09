@@ -10,7 +10,7 @@ const FailIndent = "\x1b[1;41m \x1b[0m "
 const SoftFailStyle = "\x1b[1;40;33m"
 const SoftFailIndent = "\x1b[1;40m \x1b[0m "
 
-const numRandTimes = 1000
+const numRandTimes = 10000
 
 //[ InputString, [LocalisedTime1, LocalisedTime2...] ]
 const tests = [
@@ -47,7 +47,8 @@ const tests = [
 	["Sie sagt bei einer Inzidenz von unter 140 ist es...", [undefined]],
 	["Die Studiotechnik für 720p ist noch nicht abgeschrieben.", [undefined]],
 	["720p IST, 720pm ist", ["14:50", "14:50"]],
-	["Der Schuss bei 1:14 ist sehr schoen abgestimmt. 10/10.", ["20:44"]]
+	["Der Schuss bei 1:14 ist sehr schoen abgestimmt. 10/10.", ["20:44"]],
+	["Starship dry mass should be ~105mt, propellant is 1,200mt, suggests ~1,300mt total mass, sans payload. Raptors produce ~ 200mt thrust, so six sea level engines should be able to lift a fully fueled Starship, assuming they red line thrust.", [undefined, undefined, undefined, undefined]]
 ]
 let passCount = 0
 
@@ -61,7 +62,7 @@ console.log("The results are in...")
 console.log(outputStyle, `${passCount} / ${tests.length} test${passCount == 1 ? '' : 's'} passed (${Math.round(passCount / tests.length * 100)}%)`, Reset)
 
 //Test against some random data
-console.log(`Now testing ${numRandTimes} random times`)
+console.log(`\nNow testing ${numRandTimes} random times`)
 testRandomTimes()
 
 
@@ -205,6 +206,7 @@ function testRandomTimes() {
 	let tmpTime
 	let shouldBeValid
 	let useNonsensePadding
+	const startTime = performance.now()
 	for (let i = 0; i < numRandTimes; i++) {
 		shouldBeValid = Math.random() > .25
 		useNonsensePadding = Math.random() >= .5
@@ -234,4 +236,5 @@ function testRandomTimes() {
 	} else {
 		console.log(`${PassStyle} No issues found ${Reset}`)
 	}
+	console.log(`${Math.round(performance.now() - startTime)} milliseconds elapsed`)
 }
