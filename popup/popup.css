@@ -3,16 +3,19 @@
 	--bg-col-rgb: 39,35,53;
 	--green-rgb: 48,203,156;
 	--red-rgb: 207,52,99;
+	--dark-border: #1b1825;
+	--dark-green-hex: #2a5c58;
+	--red-dark-blend: #7b2c4c;
 }
 
-::-webkit-scrollbar { background-color: #1b1825; }
-::-webkit-scrollbar-thumb { background-color: #f0f0f0; }
+::-webkit-scrollbar { background-color: var(--dark-border); width: 8px; }
+::-webkit-scrollbar-thumb { background-color: currentColor; }
 
 html { overflow: hidden; scrollbar-width: none; }
 
 body {
 	margin: 0px !important;
-	border: 2px solid #1b1825 !important;
+	border: 2px solid var(--dark-border) !important;
 	padding: 10px;
 	z-index: 99;
 	font-family: -apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif;
@@ -43,18 +46,18 @@ select, button, h3 {
 h3 {
 	font-size: large;
 	font-weight: 600;
-	background-image: linear-gradient(35deg, rgba(var(--red-rgb), 1) 54%, rgba(var(--green-rgb), 1) calc(54% + 1px));
+	background-image: linear-gradient(35deg, rgba(var(--red-rgb), 1) 47.5%, rgba(var(--green-rgb), 1) calc(47.5% + 1px));
 	margin: -10px -10px 10px -10px;
 	padding: 2px;
 	text-shadow: 1px 1px 0 rgba(0,0,0,.333);
 	text-indent: 8px;
-	letter-spacing: 1px;
+	/*letter-spacing: 1px;*/
 	display: flex;
 	align-items: center;
 	justify-content: space-between;
 }
 
-#normalContent {
+#normalContent, #optionsTabs {
 	display: flex;
 	flex-direction: column;
 	/*transition: height .25s ease-in-out, width .25s ease-in-out;*/
@@ -66,9 +69,11 @@ h3 {
 	flex: 0 0 0;
 	overflow: hidden;
 	position: relative;
+	visibility: hidden;
 }
 .page.visible {
 	flex: 1 1 auto;
+	visibility: visible;
 }
 .page.goingAway {
 	z-index: 10;
@@ -77,6 +82,10 @@ h3 {
 	top: 0;
 	opacity: 0;
 	background-color: var(--bg-col-hex);
+	visibility: visible;
+}
+#optionsMode.page.visible {
+	flex: 0 1 auto;
 }
 @keyframes fade {
 	0% { opacity: 100%; }
@@ -116,7 +125,7 @@ select {
 	background-color: rgba(var(--red-rgb), .25);
 	border: none;
 	/*scrollbar-width: thin;*/
-	scrollbar-color: #f0f0f0 #1b1825;
+	scrollbar-color: currentColor var(--dark-border);
 	border-radius: 2.5px;
 	-moz-appearance: none;
 	appearance: none;
@@ -163,6 +172,7 @@ button {
 	cursor: pointer;
 	color: #f0f0f0;
 	font-weight: 600;
+	transition: all .125s;
 }
 button:focus, button:hover {
 	background-color: rgba(var(--green-rgb), .5);
@@ -185,9 +195,11 @@ h3 button {
 	font-size: medium;
 	padding: 4px 10px;
 	overflow: hidden;
+	display: flex;
+	align-items: center;
 }
 h3 button:focus, h3 button:hover {
-	background-color: #7b2c4c;
+	background-color: var(--red-dark-blend);
 	/*
 		Sadly we can't mix colours with CSS just yet, so this is a premixed value
 		https://developer.mozilla.org/en-US/docs/Web/CSS/color_value/color-mix()
@@ -196,8 +208,48 @@ h3 button:focus, h3 button:hover {
 h3 button:active {
 	background-color: rgba(var(--red-rgb), 1);
 }
-button svg {
+#sandboxPage svg {
 	margin-right: 8px;
+}
+
+h3 > div {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+}
+#sandboxPage {
+	min-width: 115px;
+	text-align: left;
+}
+#optionsPage {
+	background-color: transparent;
+	padding: 0;
+	border-radius: 50%;
+	transition: transform .125s;
+}
+#optionsPage:hover, #optionsPage:focus {
+	transform: scale(1.1);
+}
+#optionsPage:active {
+	transform: scale(.9);
+	/*makwe it an animation that plays (set by a c;lass) on click*/
+}
+#optionsPage svg {
+	animation: rotate 3s linear infinite;
+	/*animation-delay: -.125s;*/
+	animation-play-state: paused;
+	width: auto;
+	height: 25px;
+}
+#optionsPage path {
+	fill: rgb(var(--bg-col-rgb));
+}
+#optionsPage:hover svg, #optionsPage:focus svg {
+	animation-play-state: running;
+}
+@keyframes rotate {
+	0% { transform: rotate(0) }
+	100% { transform: rotate(360deg) }
 }
 
 textarea {
@@ -238,6 +290,243 @@ textarea::selection {
 	text-shadow: none;
 }
 
+h4 {
+	font-weight: 600;
+	margin: 10px 0 0 0;
+}
+
+p {
+	white-space: pre-line;
+	font-size: 90%;
+	margin: 5px 0;
+}
+
+
+.tabButtons {
+	display: flex;
+	flex-direction: row;
+	gap: 0px;
+	border-bottom: 2px solid var(--dark-border);
+	padding-bottom: 10px;
+}
+.tabButtons button:first-child {
+	border-radius: 2.5px 0 0 2.5px;
+}
+.tabButtons button:last-child {
+	border-radius: 0 2.5px 2.5px 0;
+}
+button.currentTab {
+	background-color: rgb(var(--green-rgb));
+	color: var(--dark-border);
+}
+button.currentTab:active div {
+	text-shadow: none;
+}
+button.inactiveTab {
+	background-color: rgba(var(--red-rgb), .25);
+}
+button.inactiveTab:focus, button.inactiveTab:hover {
+	background-color: rgba(var(--red-rgb), .5);
+}
+button.inactiveTab:active {
+	background-color: rgba(var(--red-rgb), 1);
+}
+
+.columnOfInputs {
+	display: flex;
+	flex-direction: column;
+}
+.columnOfInputs label {
+	position: relative;
+	line-height: 1.825em;
+}
+/*.columnOfInputs label:hover, .columnOfInputs label:focus {
+	background-color: rgba(var(--red-rgb), .25);
+}*/
+label input[type="radio"], input[type="checkbox"] {
+	opacity: 0;
+	margin: 0 0 0 1.25rem;
+}
+input[type="radio"] + span, input[type="checkbox"] + span {
+	--radioRingCol: currentColor;
+	--radioCheckCol: rgb(var(--green-rgb)); /*currentColor*/
+	transition: color .125s;
+}
+input[type="radio"]:checked + span, input[type="checkbox"]:checked + span {
+	--radioRingCol: rgb(var(--green-rgb));
+	--radioCheckCol: rgb(var(--green-rgb));
+}
+input[type="radio"] + span::before, input[type="checkbox"] + span::before {
+	content: "";
+	position: absolute;
+	border: 2px solid var(--radioRingCol);
+	width: .8rem;
+	height: .8rem;
+	left: 10px;
+	top: calc(50% - .4rem);
+	border-radius: 50%;
+	transition: border-color .2s ease-in-out;
+}
+input[type="radio"] + span::after, input[type="checkbox"] + span::after {
+	content: "";
+	position: absolute;
+	background-color: var(--radioCheckCol);
+	width: .8rem;
+	height: .8rem;
+	left: 12px;
+	top: calc(50% - .4rem + 2px);
+	border-radius: 50%;
+	transition: background-color .2s ease-in-out, transform .2s ease-in-out;
+	transform: scale(0);
+}
+input[type="checkbox"] + span::before {
+	top: calc(50% - .5rem);
+	border-radius: 2.5px;
+}
+input[type="checkbox"] + span::after {
+	top: calc(50% - .5rem + 2px);
+	border-radius: 0%;
+}
+input[type="radio"]:not(:checked):hover + span::after, input[type="checkbox"]:not(:checked):hover + span::after {
+	transform: scale(.5);
+}
+input[type="radio"]:checked + span::after, input[type="checkbox"]:checked + span::after {
+	transform: scale(1);
+}
+/*input[type="radio"]:checked:hover + span::after, input[type="checkbox"]:checked:hover + span::after,
+input[type="radio"]:checked:focus + span::after, input[type="checkbox"]:checked:focus + span::after {
+	transform: scale(.75);
+}*/
+
+input[type="radio"]:focus + span, input[type="radio"]:hover + span,
+input[type="checkbox"]:focus + span, input[type="checkbox"]:hover + span {
+	color: rgba(var(--green-rgb), 1);
+}
+
+
+
+.scrollCont {
+	max-height: 250px;
+	min-width: 325px;
+	overflow-y: auto;
+	scrollbar-color: currentColor transparent;
+	scrollbar-width: thin;
+	border: solid var(--dark-border);
+	padding: 5px 0 5px 5px;
+	background-color: var(--dark-border);
+	border-radius: 2.5px;
+}
+
+ul {
+	margin: 0;
+	padding: 0;
+	list-style: none;
+}
+
+div > ul > li:not(:first-child) {
+	margin-top: 10px;
+}
+li > h5 {
+	margin: 0;
+	padding-left: 5px;
+	padding-right: 5px;
+	min-width: 100px;
+	text-align: center;
+	display: inline-block;
+	font-weight: 600;
+	background-color: rgb(var(--red-rgb));
+	border-radius: 5px 2.5px 2.5px 0;
+	/*font-size: 112.5%;*/
+	font-size: 105%;
+	position: relative;
+}
+li > h5::after {
+	content: "";
+	position: absolute;
+	width: 5px;
+	height: 5px;
+	bottom: -5px;
+	left: 2px;
+	background-color: rgb(var(--red-rgb));
+	clip-path: path('M0 0v5a5 5 0 015-5H0z');
+	z-index: 9;
+}
+div > ul > li {
+	position: relative;
+}
+div > ul > li::before {
+	content: "";
+	position: absolute;
+	width: 2px;
+	top: 22px;
+	bottom: 0;
+	background-image: linear-gradient(to bottom, rgb(var(--red-rgb)) 50%, transparent);
+	border-radius: 0 0 1px 1px;
+}
+li li {
+	position: relative;
+	max-width: 325px;
+	display: flex;
+	flex-direction: row;
+}
+li li div:first-child {
+	overflow: hidden;
+	white-space: normal;
+	text-indent: -10px;
+	padding-left: 15px;
+}
+li li div:last-child {
+	margin-left: 8px;
+	font-variant-numeric: tabular-nums;
+}
+li input {
+    /*visibility: hidden;*/
+	opacity: 0;
+    width: 0;
+    margin: 0;
+}
+.scrollCont li label {
+	margin-left: 2px;
+	padding-top: 2px;
+	padding-bottom: 2px;
+	padding-right: 5px;
+	display: flex;
+	flex-direction: row;
+	justify-content: space-between;
+	box-sizing: border-box;
+	flex: 1 1 auto;
+	border-radius: 0 2.5px 2.5px 0;
+	transition: all .125s;
+}
+.scrollCont input + label {
+	--labelOpacity1: .1;
+	--labelOpacity2: .25;
+	--labelColour: var(--green-rgb);
+}
+.scrollCont input + label:hover, .scrollCont input + label:focus, .scrollCont input + label:active {
+	--labelColour: var(--red-rgb);
+	--labelOpacity1: .2;
+	--labelOpacity2: .33;
+}
+.scrollCont input + label:active {
+	--labelOpacity1: .33;
+}
+.scrollCont input + label:active div {
+	transform: translateY(1px);
+}
+.scrollCont input:checked + label {
+	color: rgb(var(--green-rgb));
+}
+.scrollCont input:checked + label:hover, .scrollCont input:checked + label:focus {
+	--labelColour: var(--green-rgb);
+	--labelOpacity1: .2;
+	--labelOpacity2: .33;
+}
+.scrollCont input:checked + label, .scrollCont input + label:focus, .scrollCont input + label:hover, .scrollCont input + label:active {
+	background-image: linear-gradient(to right, transparent, rgba(var(--labelColour), .15) 10px, rgba(var(--labelColour), var(--labelOpacity1)) 50%, rgba(var(--labelColour), var(--labelOpacity2)));
+}
+
+
 .blockedHere h3 button { display: none; }
 .blockedHere h3 { padding: 4.5px 2px; }
 
@@ -246,4 +535,95 @@ textarea::selection {
 }
 .blockedHere #blockedHereContent {
 	display: block;
+}
+
+@media (prefers-color-scheme: light) {
+	:root {
+		--bg-col-hex: #fff;
+		--dark-border: #f0f0f0;
+	}
+	body {
+		color: #202020;
+	}
+	button {
+		color: #272335;
+	}
+	button {
+		background-color: rgba(var(--green-rgb), 1);
+		color: #272335;
+	}
+	button:focus, button:hover {
+		background-color: rgba(var(--green-rgb), .75);
+	}
+	button:active {
+		background-color: rgba(var(--green-rgb), .5);
+		/*color: #1b1825;*/
+	}
+	select {
+		background-color: rgba(var(--red-rgb), 1);
+		color: #fff;
+	}
+	select:hover, select:focus {
+		background-color: rgba(var(--red-rgb), .75);
+	}
+	select:active {
+		background-color: rgba(var(--red-rgb), .5);
+		color: #272335;
+	}
+	option {
+		background: var(--bg-col-hex);
+		color: rgb(var(--bg-col-rgb));
+	}
+	h3 button {
+		color: currentColor;
+	}
+	button:active div {
+		text-shadow: none;
+	}
+	h3 {
+		text-shadow: none;
+		color: #fff;
+	}
+	li > h5 {
+		color: #fff;
+	}
+	input[type="radio"] + span, input[type="checkbox"] + span {
+		--radioCheckCol: rgb(var(--red-rgb));
+	}
+	input[type="radio"]:checked + span, input[type="checkbox"]:checked + span {
+		--radioRingCol: rgb(var(--red-rgb));
+		--radioCheckCol: rgb(var(--red-rgb));
+	}
+	input[type="radio"]:focus + span, input[type="radio"]:hover + span, input[type="checkbox"]:focus + span, input[type="checkbox"]:hover + span {
+		color: rgb(var(--red-rgb));
+	}
+	button.currentTab {
+		background-color: rgb(var(--green-rgb));
+		color: rgb(var(--bg-col-rgb));
+	}
+	button.inactiveTab {
+		background-color: rgb(var(--bg-col-rgb));/*rgb(var(--red-rgb));*/
+		color: #fff;
+	}
+	button.inactiveTab:focus, button.inactiveTab:hover {
+		background-color: var(--red-dark-blend);
+	}
+	button.inactiveTab:active {
+		background-color: rgba(var(--red-rgb), 1);
+	}
+	.scrollCont {
+		background-color: #fdfdfd;
+	}
+	.scrollCont input:checked + label {
+		color: var(--dark-green-hex);
+	}
+	.scrollCont input + label:active {
+		--labelOpacity1: .33;
+		--labelOpacity2: .5;
+	}
+	.scrollCont input:checked + label:hover, .scrollCont input:checked + label:focus {
+		--labelOpacity1: .33;
+		--labelOpacity2: .5;
+	}
+
 }

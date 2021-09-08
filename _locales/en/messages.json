@@ -54,6 +54,61 @@
 		"description": "Option text for converting to the user's local time"
 	},
 
+	"popupOptions": {
+		"message": "Options",
+		"description": "Title of the options page"
+	},
+
+	"popupVisuals": {
+		"message": "Visuals",
+		"description": "Button text for the visual options page tab"
+	},
+
+	"popupSharedAbbr": {
+		"message": "Shared Abbreviations",
+		"description": "Button text for the shared abbreviations options page tab"
+	},
+
+	"popupTimeFormat": {
+		"message": "Time format",
+		"description": "Title of the time format option"
+	},
+
+	"popupTimeFormatSystem": {
+		"message": "System",
+		"description": "System time option"
+	},
+
+	"popupTimeFormat12": {
+		"message": "12 hour",
+		"description": "12 hour option"
+	},
+
+	"popupTimeFormat24": {
+		"message": "24 hour",
+		"description": "24 hour option"
+	},
+	
+	"popupDisplayOptions": {
+		"message": "Display options",
+		"description": "Title of the display options section"
+	},
+
+	"popupShowClock": {
+		"message": "Include an analogue clock next to times",
+		"description": "Text for for the option to display an analogue clock next to the localised time"
+	},
+
+	"popupSharedAbbrTitle": {
+		"message": "Timezones used by abbreviations",
+		"description": "Title of the list section used to pick which timezones go with which abbreviation"
+	},
+
+	"popupSharedAbbrDesc": {
+		"message": "Many timezones share an abbreviation.\nYou can select which are most relevant to you.",
+		"description": "Description of the shared abbreviation selection"
+	},
+
 
 	"popupUnableToFunction": {
 		"message": "The extension is unable to function on this page.",

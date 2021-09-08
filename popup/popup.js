@@ -1,38 +1,132 @@
 "use strict";
-//I don't like duplicating this here
-const tzaolObj = {"GMT":0,"EAT":180,"CET":60,"WAT":60,"CAT":120,"EET":120,"WEST":60,"WET":0,"CEST":120,"SAST":120,"HDT":-540,"HST":-600,"AKDT":-480,"AKST":-540,"AST":-240,"EST":-300,"CDT":-300,"CST":-360,"MDT":-360,"MST":-420,"PDT":-420,"PST":-480,"EDT":-240,"ADT":-180,"NST":-210,"NDT":-150,"NZST":720,"NZDT":780,"EEST":180,"HKT":480,"WIB":420,"WIT":540,"IDT":180,"IST":330,"PKT":300,"WITA":480,"KST":540,"JST":540,"ACST":570,"ACDT":630,"AEST":600,"AEDT":660,"AWST":480,"BST":60,"MSK":180,"SST":-660,"UTC":0,"PT":0,"ET":0,"MT":0,"CT":0};
 let builtTZList = false;
 let builtSandboxTZList = false;
 
+let builtOptionsPage = false;
+
 let currentPage;
+let previousPage;
 let webpageCont;
 let sandboxCont;
+let optionsCont;
 let normalCont;
+let pageTransition = false;
 
-window.onload = function() {
+//Stub the chrome object so you can load the webpage as a standalone for dev work
+if (!('chrome' in window)) {
+	window.chrome = {
+		i18n: {
+			getMessage: i=>i
+		},
+		tabs: {
+			sendMessage: i=>i,
+			query: i=>i,
+			executeScript: i=>i
+		},
+		runtime: {
+			lastError: false
+		},
+		storage: {
+			local: {
+				get: ()=>{init()},
+				set: ()=>{}
+			}
+		}
+	}
+}
+
+const defaultSettings = {
+	defaults: { ...defaultTZ },
+	timeFormat: 0,
+	includeClock: true
+}
+
+let userSettings = { ...defaultSettings }
+
+window.addEventListener("DOMContentLoaded", () => {
+	//Get any saved data
+	chrome.storage.local.get(defaultSettings, data => {
+		//Merge the default timezone selection with the user's
+		//This way we can keep the list updated, should any new ones be added.
+		// (Obviously doesn't handle removal)
+		userSettings = { defaults: { ...defaultSettings.defaults }, ...data };
+		init();
+	});
+});
+
+function init() {
+
+	//Localise strings
+	[
+		["extensionNameText", "extensionName"],
+		["manualText", "popupManualConvert"],
+		["manualUsageHint", "popupManualConvertSourceText"],
+		["sandboxText", "popupSandboxText"],
+		["sandboxPageStr", "popupSandboxMode"],
+		["sandboxConvertTimesTo", "popupSandboxConvertTimesTo"],
+		["optionsText", "popupOptions"],
+		["visualsTabText", "popupVisuals"],
+		["sharedAbbrTabText", "popupSharedAbbr"],
+		["timeFormatTitle", "popupTimeFormat"],
+		["timeFormatSystem", "popupTimeFormatSystem"],
+		["timeFormat12", "popupTimeFormat12"],
+		["timeFormat24", "popupTimeFormat24"],
+		["displayOptionsTitle", "popupDisplayOptions"],
+		["showClock", "popupShowClock"],
+		["sharedAbbrTitle", "popupSharedAbbrTitle"],
+		["sharedAbbrDesc", "popupSharedAbbrDesc"]
+	].forEach(i => {
+		document.getElementById(i[0]).textContent = chrome.i18n.getMessage(i[1]);
+	})
+	document.getElementById("sandboxTextarea").placeHolder = chrome.i18n.getMessage("popupSandboxTextarea");
+	document.querySelectorAll(".okText").forEach(ele => ele.textContent = chrome.i18n.getMessage("OK"));
+
+
 	document.getElementById("useSelectedTimezone").addEventListener("click", useSelectedTimezone);
 	//Defer populating the tzList until we interact with it.
 	document.getElementById("tzList").addEventListener("focus", buildTZList, { once: true });
 	document.getElementById("tzList").addEventListener("mouseover", buildTZList, { once: true });
-	document.getElementById("manualText").textContent = chrome.i18n.getMessage("popupManualConvert");
-	document.getElementById("manualUsageHint").textContent = chrome.i18n.getMessage("popupManualConvertSourceText");
-	document.querySelectorAll(".okText").forEach(ele => ele.textContent = chrome.i18n.getMessage("OK"));
 
 	document.getElementById("sandboxPage").addEventListener("click", toggleSandboxPageMode);
-	document.getElementById("sandboxText").textContent = chrome.i18n.getMessage("popupSandboxText");
-	document.getElementById("sandboxPageStr").textContent = chrome.i18n.getMessage("popupSandboxMode");
-	document.getElementById("sandboxTextarea").placeHolder = chrome.i18n.getMessage("popupSandboxTextarea");	
-	document.getElementById("sandboxConvertTimesTo").textContent = chrome.i18n.getMessage("popupSandboxConvertTimesTo");
 	document.getElementById("sandboxConvertBtn").addEventListener("click", sandboxConvertText);
+
+	document.getElementById("optionsPage").addEventListener("click", toggleOptionsPageMode);
+	document.getElementById("visualsTabButton").addEventListener("click", changeOptionsTab);
+	document.getElementById("sharedAbbrTabButton").addEventListener("click", changeOptionsTab);
+	document.getElementsByName("timeFormat").forEach(tF => tF.addEventListener("change", updateTimeFormatSetting));
+	document.getElementsByName("showClock")[0].addEventListener("change", updateShowClockSetting);
 
 	normalCont = document.getElementById("normalContent");
 	webpageCont = document.getElementById("webpageMode");
 	sandboxCont = document.getElementById("sandboxMode");
+	optionsCont = document.getElementById("optionsMode");
 	currentPage = webpageCont;
+	previousPage = sandboxCont;
 
 	normalCont.style.height = webpageCont.scrollHeight + "px";
 	normalCont.style.width = webpageCont.scrollWidth + "px";
 }
+
+function updateShowClockSetting() {
+	userSettings.includeClock = this.checked;
+	saveSettings();
+}
+function updateTimeFormatSetting() {
+	userSettings.timeFormat = this.value;
+	saveSettings();
+}
+
+function saveSettings(rebuildTZList = false) {
+	chrome.storage.local.set(userSettings);
+
+	if (rebuildTZList) {
+		builtSandboxTZList = false;
+		builtTZList = false;
+		buildTZList();
+		buildSandboxTZList();
+	}
+}
+
 function buildTZList() {
 	if (builtTZList) { return; }
 
@@ -55,27 +149,42 @@ function buildTZList() {
 	const tmpNow = Date.now();
 	const dstAmerica = tmpNow >= toDST && tmpNow <= fromDST;
 	//Now we need to fill in the correct offset for PT/ET
-	tzaolObj.PT = dstAmerica ? tzaolObj.PDT : tzaolObj.PST;
-	tzaolObj.ET = dstAmerica ? tzaolObj.EDT : tzaolObj.EST;
-	tzaolObj.CT = dstAmerica ? tzaolObj.CDT : tzaolObj.CST;
-	tzaolObj.MT = dstAmerica ? tzaolObj.MDT : tzaolObj.MST;
+	defaultSettings.defaults.PT = dstAmerica ? defaultTZ.PDT : defaultTZ.PST;
+	defaultSettings.defaults.ET = dstAmerica ? defaultTZ.EDT : defaultTZ.EST;
+	defaultSettings.defaults.CT = dstAmerica ? defaultTZ.CDT : defaultTZ.CST;
+	defaultSettings.defaults.MT = dstAmerica ? defaultTZ.MDT : defaultTZ.MST;
 	//
 
 	let tzListSelect = document.getElementById("tzList");
-	tzListSelect.children[0].remove();
+	//tzListSelect.children[0].remove();
+	let optionsFrag = document.createDocumentFragment();
 
-	let sortedTZ = Object.entries(tzaolObj).sort((a, b) => a[1] - b[1]);
+	let sortedTZ = Object.entries(defaultSettings.defaults).sort((a, b) => a[1] - b[1]);
 
 	sortedTZ.forEach(tz => {
 		let listEntry = document.createElement("option");
 		listEntry.textContent = tz[0]/*.padEnd(4)*/ + " (UTC" + tzOffsetToString(tz[1]) + ")";
 		listEntry.value = tz[0];
 		if (tz[0] === 'UTC') { listEntry.selected = 'selected'; }
-		tzListSelect.appendChild(listEntry);
+		optionsFrag.appendChild(listEntry);
 	});
+
+	tzListSelect.replaceChildren(optionsFrag);
 
 	builtTZList = true;
 }
+function buildSandboxTZList() {
+	if (builtSandboxTZList) { return; }
+	let tzListSelect = document.getElementById("tzList").cloneNode(true);
+	let localOption = document.createElement("option");
+	localOption.value = "local";
+	localOption.textContent = chrome.i18n.getMessage("popupLocalTime");
+	tzListSelect.prepend(localOption);
+	document.getElementById("tzListSandbox").replaceChildren(...tzListSelect.children);
+	document.getElementById("tzListSandbox").selectedIndex = 0;
+	builtSandboxTZList = true;
+}
+
 function tzOffsetToString(tzMins) {
 	//What on earth is this ugly code
 	let tzSign = tzMins < 0 ? '-' : '+';
@@ -100,13 +209,13 @@ function tzOffsetToString(tzMins) {
 function useSelectedTimezone() {
 	let tzList = document.getElementById("tzList");
 	let selectedTZ = tzList.options[tzList.selectedIndex].value;
-	if (tzaolObj[selectedTZ] !== 'undefined') {
+	if (defaultTZ[selectedTZ] !== 'undefined') {
 		chrome.tabs.query(
 			{ active: true, currentWindow: true },
 			(tabs) => {
 				chrome.tabs.sendMessage(
 					tabs[0].id,
-					{ convert: selectedTZ }
+					{ mode: "convert", selectedTZ: selectedTZ }
 				);
 			}
 		);
@@ -114,8 +223,7 @@ function useSelectedTimezone() {
 	window.close();
 }
 
-function toggleSandboxPageMode() {
-	const newPage = currentPage === webpageCont ? sandboxCont : webpageCont;
+function changePage(buttonEle, newPage) {
 	newPage.style.display = "";
 
 	normalCont.style.height = newPage.scrollHeight + "px";
@@ -127,18 +235,27 @@ function toggleSandboxPageMode() {
 
 	currentPage.addEventListener("animationend", pageChangeCallback, { once: true });
 
+	previousPage = currentPage;
 	currentPage = newPage;
+
+	if (buttonEle) {
+		buttonEle.blur();
+		buttonEle.setAttribute("disabled", true);
+	}
+
+	pageTransition = true;
+}
+
+function toggleSandboxPageMode() {
+	if (pageTransition) { return }
+	// Figure out which page we're toggling to
+	// If we're on the options page then base our decision on what the previousPage is
+	const newPage = (currentPage === optionsCont ? previousPage : currentPage) === webpageCont ? sandboxCont : webpageCont;
+	changePage(this, newPage);
 
 	if (!builtSandboxTZList) {
 		buildTZList();
-		let tzListSelect = document.getElementById("tzList").cloneNode(true);
-		let localOption = document.createElement("option");
-		localOption.value = "local";
-		localOption.textContent = chrome.i18n.getMessage("popupLocalTime");
-		tzListSelect.prepend(localOption);
-		document.getElementById("tzListSandbox").replaceChildren(null, ...tzListSelect.children);
-		document.getElementById("tzListSandbox").selectedIndex = 0;
-		builtSandboxTZList = true;
+		buildSandboxTZList();
 	}
 
 	const sandboxPageStr = document.getElementById("sandboxPageStr");
@@ -146,14 +263,17 @@ function toggleSandboxPageMode() {
 	sandboxPageStr.setAttribute("data-newText", chrome.i18n.getMessage(newTextString));
 	sandboxPageStr.addEventListener("animationend", updateButtonText);
 	sandboxPageStr.classList.add("updateText");
-
-	this.blur();
-	this.setAttribute("disabled", true);
 }
 function pageChangeCallback() {
-	const previousPage = currentPage === webpageCont ? sandboxCont : webpageCont;
+	//const previousPage = currentPage === webpageCont ? sandboxCont : webpageCont;
 	previousPage.classList.remove("goingAway");
 	previousPage.style.display = "none";
+
+	if (document.getElementById("optionsPage").hasAttribute("disabled")) {
+		document.getElementById("optionsPage").removeAttribute("disabled");
+	}
+
+	pageTransition = false
 
 	//document.getElementById("sandboxPage").removeAttribute("disabled");
 }
@@ -172,19 +292,20 @@ function updateButtonText() {
 		document.getElementById("sandboxPage").removeAttribute("disabled");
 	}
 }
+
 function sandboxConvertText() {
 	const userText = document.getElementById("sandboxTextarea").value;
 	const userTimezone = document.getElementById("tzListSandbox").value;
 
 	if (!userText) { return; }
-	if (!(tzaolObj.hasOwnProperty(userTimezone) || userTimezone === "local")) { return; }
+	if (!(defaultTZ.hasOwnProperty(userTimezone) || userTimezone === "local")) { return; }
 
 	chrome.tabs.query(
 		{ active: true, currentWindow: true },
 		(tabs) => {
 			chrome.tabs.sendMessage(
 				tabs[0].id,
-				{ sandbox: { text: userText, timezone: userTimezone } },
+				{ mode: "sandbox", text: userText, timezone: userTimezone },
 				sandboxProcessConvertResponse
 			)
 		}
@@ -219,6 +340,152 @@ function sandboxProcessConvertResponse(timeInfo) {
 	sandboxTextarea.value = newText;
 
 	//We should apply an animation to the textarea now.
+}
+
+function toggleOptionsPageMode() {
+	if (pageTransition) { return }
+	const newPage = currentPage === optionsCont ? previousPage : optionsCont;
+	changePage(this, newPage);
+
+	if (!builtOptionsPage) {
+
+		const demoDate = new Date(Date.UTC(2000, 1, 1, 17, 34, 0));
+		const demoTimes = [
+			demoDate.toLocaleTimeString(undefined, { hour: 'numeric', minute: 'numeric' }),
+			demoDate.toLocaleTimeString(undefined, { hour: 'numeric', minute: 'numeric', hour12: true }),
+			demoDate.toLocaleTimeString(undefined, { hour: 'numeric', minute: 'numeric', hour12: false })
+		];
+		document.getElementById("timeFormatSystem").textContent += ` (${demoTimes[0]})`;
+		document.getElementById("timeFormat12").textContent += ` (${demoTimes[1]})`;
+		document.getElementById("timeFormat24").textContent += ` (${demoTimes[2]})`;
+		document.getElementsByName("timeFormat")[userSettings.timeFormat].checked = true;
+
+		document.getElementsByName("showClock")[0].checked = userSettings.includeClock;
+
+		let frag = document.createDocumentFragment();
+		Object.keys(tzInfo).forEach(abbr => {
+			if (tzInfo[abbr].length > 1) {
+				let abbrLI = document.createElement("li");
+				let tmpText = document.createElement("h5");
+				tmpText.textContent = abbr;
+				abbrLI.appendChild(tmpText);
+				//abbrLI.appendChild(document.createTextNode(abbr));
+				let abbrUL = document.createElement("ul");
+				tzInfo[abbr].forEach((abbrTZ, i) => {
+					const tzLI = document.createElement("li");
+
+					const tzRadio = document.createElement("input");
+					tzRadio.type = "radio";
+					tzRadio.name = abbr;
+					tzRadio.value = abbrTZ.offset;
+					tzRadio.id = `${abbr}${abbrTZ.offset}`;
+					// We're set up to make the label the selectable element via keyboard
+					tzRadio.tabIndex = "-1";
+
+					if (userSettings.defaults[abbr] === abbrTZ.offset) {
+						tzRadio.setAttribute('checked', 'checked');
+					}
+
+					tzRadio.addEventListener("change", selectThisOffset);
+
+					tzLI.appendChild(tzRadio);
+
+					const tzLabel = document.createElement("label");
+					tzLabel.setAttribute("for", `${abbr}${abbrTZ.offset}`);
+					tzLabel.tabIndex = "0";
+					//Need to handle enter being pressed
+					tzLabel.addEventListener("keyup", selectThisOffsetFromKeyPress);
+
+					const titleEle = document.createElement("div");
+					titleEle.textContent = abbrTZ.title;
+					tzLabel.appendChild(titleEle);
+
+					const offsetEle = document.createElement("div");
+					const smallUTC = document.createElement("small");
+					smallUTC.textContent = "UTC";
+					offsetEle.appendChild(smallUTC);
+					offsetEle.appendChild(document.createTextNode(m2h(abbrTZ.offset)));
+					//offsetEle.textContent = `UTC${m2h(abbrTZ.offset)}`;
+					tzLabel.appendChild(offsetEle);
+
+					//tzLI.textContent = `${abbrTZ.title} UTC${m2h(abbrTZ.offset)}`;
+
+					tzLI.appendChild(tzLabel);
+
+					abbrUL.appendChild(tzLI);
+				})
+				abbrLI.appendChild(abbrUL);
+				frag.appendChild(abbrLI);
+			}
+		})
+		document.getElementById("userOffsetsList").replaceChildren(frag)
+
+		builtOptionsPage = true;
+	}
+}
+function changeOptionsTab() {
+	if (this.classList.contains("currentTab")) {
+		//Nothing to do
+		return;
+	}
+
+	Array.from(this.parentNode.children).forEach(c => {
+		if (c.classList.contains("currentTab")) {
+			c.classList.remove("currentTab");
+			c.classList.add("inactiveTab");
+
+			let currentTab = document.getElementById(c.getAttribute("data-target"));
+			currentTab.classList.remove("visible");
+			currentTab.classList.add("goingAway");
+			currentTab.addEventListener("animationend", tabChangeCallback, { once: true });
+
+		} else if (c === this) {
+			c.classList.add("currentTab");
+			c.classList.remove("inactiveTab");
+
+			let newTab = document.getElementById(c.getAttribute("data-target"));
+			newTab.classList.add("visible");
+		}
+	})
+
+	normalCont.style.height = optionsCont.scrollHeight + "px";
+	normalCont.style.width = optionsCont.scrollWidth + "px";
+}
+function tabChangeCallback() {
+	this.classList.remove('goingAway');
+
+	normalCont.style.height = optionsCont.scrollHeight + "px";
+	normalCont.style.width = optionsCont.scrollWidth + "px";
+}
+
+function selectThisOffsetFromKeyPress(e) {
+	if (e.key === "Enter") {
+		const tmpEle = document.getElementById(this.getAttribute("for"))
+		if (tmpEle) { tmpEle.click(); }
+	}
+}
+
+function selectThisOffset() {
+	//Build new defaults list, and call the save function?
+	//We probably need to inform the content tab(s?) that the defaults have changed, or should we just let people manually reload?
+	//We need to rebuild the tzList selection list when they change the defaults.
+	//So set builtTZList to false and call buildTZList()
+	//
+	if (userSettings.defaults[this.name]) {
+		userSettings.defaults[this.name] = parseInt(this.value);
+	}
+
+	//Save the updated list, and rebuild the tzList selection element
+	saveSettings(true);
+}
+
+function m2h(mins) {
+	const sign = mins < 0;
+	mins = Math.abs(mins);
+	var h = Math.floor(mins / 60);
+	if (h > 23) { h = h - 24 };
+	var m = mins % 60;
+	return (sign ? '-' : '+') + String(h).padStart(2, '0') + ":" + String(m).padStart(2, '0');
 }
 
 /*

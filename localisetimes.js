@@ -1,12 +1,11 @@
 "use strict";
 
-let dateTimeFormats = Array(2)
+let dateTimeFormats = Array(2);
 //PHP spat these timezone abbreviations out, and their offsets - There could be some missing
-const tzaolObj = {"GMT":0,"EAT":180,"CET":60,"WAT":60,"CAT":120,"EET":120,"WEST":60,"WET":0,"CEST":120,"SAST":120,"HDT":-540,"HST":-600,"AKDT":-480,"AKST":-540,"AST":-240,"EST":-300,"CDT":-300,"CST":-360,"MDT":-360,"MST":-420,"PDT":-420,"PST":-480,"EDT":-240,"ADT":-180,"NST":-210,"NDT":-150,"NZST":720,"NZDT":780,"EEST":180,"HKT":480,"WIB":420,"WIT":540,"IDT":180,"IST":330,"PKT":300,"WITA":480,"KST":540,"JST":540,"ACST":570,"ACDT":630,"AEST":600,"AEDT":660,"AWST":480,"BST":60,"MSK":180,"SST":-660,"UTC":0,"PT":0,"ET":0,"MT":0,"CT":0};
-const tzaolStr = Object.keys(tzaolObj).join("|");
+const defaultTZ = {"ACDT":630,"ACST":570,"ACT":-300,"ACWST":525,"ADT":-180,"AEDT":660,"AEST":600,"AET":600,"AFT":270,"AKDT":-480,"AKST":-540,"AMST":-180,"AMT":-240,"ART":-180,"AST":180,"AWST":480,"AZOST":0,"AZOT":-60,"AZT":240,"BNT":480,"BIOT":360,"BIT":-720,"BOT":-240,"BRST":-120,"BRT":-180,"BST":60,"BTT":360,"CAT":120,"CCT":390,"CDT":-300,"CEST":120,"CET":60,"CHADT":825,"CHAST":765,"CHOT":480,"CHOST":540,"CHST":600,"CHUT":600,"CIST":480,"CKT":-600,"CLST":-180,"CLT":-240,"COST":-240,"COT":-300,"CST":-360,"CT":-360,"CVT":-60,"CWST":525,"CXT":420,"DAVT":420,"EASST":-300,"EAST":-360,"EAT":180,"ECT":-240,"EDT":-240,"EEST":180,"EET":120,"EGST":0,"EGT":-60,"EST":-300,"ET":-300,"FET":180,"FJT":720,"FKST":-180,"FKT":-240,"FNT":-120,"GALT":-360,"GAMT":-540,"GET":240,"GFT":-180,"GILT":720,"GIT":-540,"GMT":0,"GST":-120,"GYT":-240,"HDT":-540,"HAEC":120,"HST":-600,"HKT":480,"HMT":300,"ICT":420,"IDLW":-720,"IDT":180,"IOT":180,"IRDT":270,"IRKT":480,"IRST":210,"IST":330,"JST":540,"KALT":120,"KGT":360,"KOST":660,"KRAT":420,"KST":540,"LINT":840,"MAGT":720,"MART":-570,"MDT":-360,"MET":60,"MEST":120,"MHT":720,"MIT":-570,"MMT":390,"MSK":180,"MST":480,"MUT":240,"MVT":300,"MYT":480,"NCT":660,"NDT":-150,"NFT":660,"NPT":345,"NST":-210,"NT":-210,"NUT":-660,"NZDT":780,"NZST":720,"OMST":360,"PDT":-420,"PET":-300,"PETT":720,"PGT":600,"PHOT":780,"PHT":480,"PHST":480,"PKT":300,"PMDT":-120,"PMST":-180,"PONT":660,"PST":-480,"PYST":-180,"PYT":-240,"RET":240,"SAKT":660,"SAMT":240,"SAST":120,"SBT":660,"SCT":240,"SDT":-600,"SGT":480,"SLST":330,"SRET":660,"SRT":-180,"SST":-660,"TAHT":-600,"THA":420,"TJT":300,"TKT":780,"TLT":540,"TMT":300,"TRT":180,"TOT":780,"TVT":720,"ULAST":540,"ULAT":480,"UTC":0,"UYST":-120,"UYT":-180,"UZT":300,"VET":-240,"VLAT":600,"VOLT":240,"VUT":660,"WAKT":720,"WAST":120,"WAT":60,"WEST":60,"WET":0,"WIB":420,"WIT":540,"WITA":480,"WST":480,"YAKT":540,"YEKT":300};
 
-const timeRegex = new RegExp('\\b(?:([01]?[0-9]|2[0-3])(:|\\.)?([0-5][0-9])?(:[0-5][0-9])?(?: ?([ap]\\.?m?\\.?))? ?(to|until|til|and|[-\u2010-\u2015]) ?\\b)?([01]?[0-9]|2[0-3])(:|\\.)?([0-5][0-9])?(:[0-5][0-9])?(?: ?([ap]\\.?m?\\.?) )?(?: ?(' + tzaolStr + '))( ?(?:\\+|-) ?[0-9]{1,2})?\\b', 'giu');
-//[-|\\u{8211}|\\u{8212}|\\u{8213}]
+let timeRegex;
+
 //Match group enumeration
 const _G = {
 	fullStr: 0,
@@ -38,6 +37,32 @@ let clockEle;
 
 //Check the users (first 3) accepted languages, if one is German, then enforce IST being in upper case only as a time zone abbreviation.
 const needsUppercaseIST = typeof window === "undefined" ? false : navigator.languages.findIndex((l,i) => i < 3 && l.split("-")[0] === "de") !== -1
+
+
+const defaultSettings = {
+	defaults: { ...defaultTZ },
+	timeFormat: 0,
+	includeClock: true
+}
+
+let userSettings = { ...defaultSettings }
+
+//Get any saved data
+chrome.storage.local.get(defaultSettings, data => {
+	//Merge the default timezone selection with the user's
+	//This way we can keep the list updated, should any new ones be added.
+	// (Obviously doesn't handle removal)
+	userSettings = { defaults: { ...defaultSettings.defaults }, ...data };
+	buildTimeRegex()
+	init();
+});
+
+function buildTimeRegex() {
+	const tzaolStr = Object.keys(userSettings.defaults).join("|");
+	timeRegex = new RegExp('\\b(?:([01]?[0-9]|2[0-3])(:|\\.)?([0-5][0-9])?(:[0-5][0-9])?(?: ?([ap]\\.?m?\\.?))? ?(to|until|til|and|[-\u2010-\u2015]) ?\\b)?([01]?[0-9]|2[0-3])(:|\\.)?([0-5][0-9])?(:[0-5][0-9])?(?: ?([ap]\\.?m?\\.?) )?(?: ?(' + tzaolStr + '))( ?(?:\\+|-) ?[0-9]{1,2})?\\b', 'giu');
+	//[-|\\u{8211}|\\u{8212}|\\u{8213}]
+}
+
 
 function lookForTimes(node = document.body, manualTZ) {
 	//Walk the dom looking for text nodes
@@ -98,9 +123,11 @@ function lookForTimes(node = document.body, manualTZ) {
 
 			//Create a time to hold this converted time
 			//We were using a span, but many websites have default span styling which might affect page flow
-			let tmpTime = document.createElement("time");
+			let tmpTime = document.createElement("localisetime");
 			tmpTime.setAttribute("class", "localiseTime");
-			tmpTime.appendChild(newClockElement(thisTime[4], thisTime[5]));
+			if (userSettings.includeClock) {
+				tmpTime.appendChild(newClockElement(thisTime[4], thisTime[5]));
+			}
 
 			//tmpTime.style.cursor = "pointer"; //Indicate that it's interactive
 			//tmpTime.style.borderBottom = "1px dotted currentColor"; //Modest styling that should fit in with any content
@@ -114,6 +141,7 @@ function lookForTimes(node = document.body, manualTZ) {
 			if (manualTZ) {
 				tmpTime.setAttribute("data-manualTZ", manualTZ); //Used when toggling
 			}
+			
 			tmpFrag.appendChild(tmpTime);
 			tmpTime.addEventListener("click", toggleTime);
 
@@ -141,15 +169,15 @@ function toggleTime(e) {
 	}
 
 	//Which state are we in?
-	if (this.getAttribute("data-original") == this.children[1].textContent) {
+	if (this.getAttribute("data-original") == this.lastChild.textContent) {
 		let manualTZStr = '';
 		if (this.hasAttribute("data-manualTZ")) {
 			manualTZStr = ' ' + this.getAttribute("data-manualTZ");
 		}
-		this.children[1].textContent = this.getAttribute("data-localised");
+		this.lastChild.textContent = this.getAttribute("data-localised");
 		this.setAttribute("title", chrome.i18n.getMessage("tooltipConverted", this.getAttribute("data-original") + manualTZStr));
 	} else {
-		this.children[1].textContent = this.getAttribute("data-original");
+		this.lastChild.textContent = this.getAttribute("data-original");
 		this.setAttribute("title", chrome.i18n.getMessage("tooltipUnconverted", this.getAttribute("data-localised")));
 	}
 
@@ -176,10 +204,10 @@ function init() {
 	const tmpNow = Date.now();
 	const dstAmerica = tmpNow >= toDST && tmpNow <= fromDST;
 	//Now we need to fill in the correct offset for PT/ET
-	tzaolObj.PT = dstAmerica ? tzaolObj.PDT : tzaolObj.PST;
-	tzaolObj.ET = dstAmerica ? tzaolObj.EDT : tzaolObj.EST;
-	tzaolObj.CT = dstAmerica ? tzaolObj.CDT : tzaolObj.CST;
-	tzaolObj.MT = dstAmerica ? tzaolObj.MDT : tzaolObj.MST;
+	userSettings.defaults.PT = dstAmerica ? defaultTZ.PDT : defaultTZ.PST;
+	userSettings.defaults.ET = dstAmerica ? defaultTZ.EDT : defaultTZ.EST;
+	userSettings.defaults.CT = dstAmerica ? defaultTZ.CDT : defaultTZ.CST;
+	userSettings.defaults.MT = dstAmerica ? defaultTZ.MDT : defaultTZ.MST;
 	//
 
 	//Give the page a once over now it has loaded
@@ -209,24 +237,20 @@ function handleMutations(mutationsList, observer) {
 	observer.observe(document.body, {attributes: false, childList: true, subtree: true});
 }
 
-init();
-
 //Listen for, and process, any relevant messages being passed from the popup menu (browser_action)
 function contentMessageListener(request, sender, sendResponse) {
-	if (request.hasOwnProperty('convert')) {
+	if (!request.hasOwnProperty('mode')) { return }
 
-		lookForTimes(document.body, request.convert);
+	switch (request.mode) {
+		case 'convert':
+			lookForTimes(document.body, request.selectedTZ);
+			break;
+		case 'sandbox':
+			const correctedOffset = userSettings.defaults.hasOwnProperty(request.timezone) ? userSettings.defaults[request.timezone] : undefined;
+			let timeInfo = spotTime(request.text, new Date(), undefined, correctedOffset);
 
-	} else if (request.hasOwnProperty('sandbox')) {
-
-		const userText = request.sandbox.text;
-		const userTimezone = request.sandbox.timezone;
-
-		const dateObj = new Date();
-		const correctedOffset = tzaolObj.hasOwnProperty(userTimezone) ? tzaolObj[userTimezone] : undefined;
-		let timeInfo = spotTime(userText, dateObj, undefined, correctedOffset);
-
-		sendResponse(timeInfo);
+			sendResponse(timeInfo);
+			break;
 	}
 }
 chrome.runtime.onMessage.addListener(contentMessageListener);
@@ -283,7 +307,7 @@ function spotTime(str, dateObj, manualTZ, correctedOffset) {
 		}
 
 		//Check that we have a match, with a valid timezone.
-		if (!match[_G.tzAbr] || typeof tzaolObj[upperTZ] === "undefined") { continue; }
+		if (!match[_G.tzAbr] || typeof userSettings.defaults[upperTZ] === "undefined") { continue; }
 		//Demand the timezone abbreviation be all the same case
 		if (!(match[_G.tzAbr] === upperTZ || match[_G.tzAbr] === match[_G.tzAbr].toLowerCase())) { continue; }
 
@@ -320,12 +344,13 @@ function spotTime(str, dateObj, manualTZ, correctedOffset) {
 		if (match[_G.offset]) {
 			hourOffset = -(match[_G.offset].replace(whiteSpaceRegEx, '')) * 60;
 		}
-		let tCorrected = tMinsFromMidnight - tzaolObj[upperTZ] + hourOffset;
+		let tCorrected = tMinsFromMidnight - userSettings.defaults[upperTZ] + hourOffset;
 		if (correctedOffset) {
 			tCorrected += correctedOffset;
 		} else {
 			tCorrected -= dateObj.getTimezoneOffset();
 		}
+
 		if (tCorrected < 0) { tCorrected += 1440; }
 		//Build the localised time
 		let tmpExplode = m2h(tCorrected).split(":");
@@ -376,7 +401,7 @@ function spotTime(str, dateObj, manualTZ, correctedOffset) {
 			let startMins = (match[_G.startMins] ? match[_G.startMins] : 0);
 			let startMinsFromMidnight = h2m(startHour, startMins);
 
-			let startCorrected = startMinsFromMidnight - tzaolObj[upperTZ] + hourOffset;
+			let startCorrected = startMinsFromMidnight - userSettings.defaults[upperTZ] + hourOffset;
 			startCorrected -= dateObj.getTimezoneOffset();
 
 			//Build the localised time
@@ -398,7 +423,8 @@ function spotTime(str, dateObj, manualTZ, correctedOffset) {
 				timeFormat.second = 'numeric';
 			}
 			//It would be nice to avoid including the meridiem if it's the same as the main time
-			localeStartTimeString = formatLocalisedTime(tmpDate, match[_G.startSeconds]) + " " + (match[_G.timeSeparator].length === 1 ? "–" : match[_G.timeSeparator]) + " ";//' – ';
+			let timeSeparator = match[_G.timeSeparator].length === 1 ? "–" : match[_G.timeSeparator];
+			localeStartTimeString = formatLocalisedTime(tmpDate, match[_G.startSeconds]) + " " + timeSeparator + " ";//' – ';
 			//Should we capture the user defined separator and reuse it? - Yes, and we are now.
 
 			SVGTimes = [ ...tmpExplode ];
@@ -423,12 +449,14 @@ function m2h(mins) {
 function h2m(hours, mins) {
 	return (+hours * 60) + +mins;
 }
+
+const hour12 = [{}, { hour12: true }, { hour12: false }]
 function formatLocalisedTime(tmpDate, withSeconds) {
 	// Lazily create the DateTimeFormat object that we need
 	if (withSeconds && !dateTimeFormats[1]) {
-		dateTimeFormats[1] = new Intl.DateTimeFormat(undefined, { hour: 'numeric', minute: 'numeric', second: 'numeric' });
+		dateTimeFormats[1] = new Intl.DateTimeFormat(undefined, { hour: 'numeric', minute: 'numeric', second: 'numeric', ...hour12[userSettings.timeFormat] });
 	} else if (!dateTimeFormats[0]) {
-		dateTimeFormats[0] = new Intl.DateTimeFormat(undefined, { hour: 'numeric', minute: 'numeric' });
+		dateTimeFormats[0] = new Intl.DateTimeFormat(undefined, { hour: 'numeric', minute: 'numeric', ...hour12[userSettings.timeFormat] });
 	}
 	// Match the granularity of the output to the input
 	return dateTimeFormats[withSeconds ? 1 : 0].format(tmpDate)	
