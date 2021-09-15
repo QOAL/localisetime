@@ -325,6 +325,7 @@ function spotTime(str, dateObj, manualTZ, correctedOffset) {
 
 		//Avoid cat and eat false positives
 		if ((match[_G.tzAbr] !== 'CAT' || match[_G.tzAbr] !== 'EAT') && !(match[_G.meridiem] || match[_G.mins])) { continue; }
+		if (match[_G.tzAbr] === 'bit' && !(match[_G.separator] || match[_G.meridiem])) { continue; }
 
 		let tHour = +match[_G.hours];
 		if (tHour == 0 && !match[_G.mins]) { continue; } //Bail if the hour is 0 and we have no minutes. (We could assume midnight)
