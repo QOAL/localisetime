@@ -133,7 +133,7 @@ function randomMeridiemStyle(meridiem) {
 	return meridiem
 }
 function randomTZ() {
-	let tzKeys = Object.keys(webExt.tzaolObj);
+	let tzKeys = Object.keys(webExt.defaultTZ);
 	let randomTZStr = tzKeys[Math.floor(Math.random() * tzKeys.length)];
 	return ' ' + (Math.random() > .5 ? randomTZStr : randomTZStr.toLowerCase());
 }

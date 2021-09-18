@@ -41,9 +41,11 @@ function patchWebExt(input) {
 
 	//Comment out the listener used by the web extension
 	output = output.replace("chrome.runtime.onMessage", "//chrome.runtime.onMessage")
+	output = `"use strict";\nconst chrome = { storage: { local: { get: () => {} } }, runtime: { getURL: () => {} }, i18n: { getMessage: () => {} } }` + output.substring(15)
 
 	//Make the required code available to the test suite
-	output += "\n\nexports.spotTime = spotTime;exports.tzaolObj = tzaolObj"
+	output += "\n\nbuildTimeRegex();init();\nexports.spotTime = spotTime;exports.defaultTZ = defaultTZ"
+	output = output.replace(/userSettings\.defaults/g, "defaultTZ")
 
 	//Force the local timezone to BST (GMT + 1)
 	//This makes the test results consistent regardless of where you live
