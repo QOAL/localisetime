@@ -44,7 +44,8 @@
 					<h5 id="optionsText">Options</h5>
 					<div class="tabButtons">
 						<button id="visualsTabButton" class="currentTab" data-target="visualsCont"><div id="visualsTabText">Visuals</div></button>
-						<button id="sharedAbbrTabButton" class="inactiveTab" data-target="sharedAbbrCont"><div id="sharedAbbrTabText">Shared Abbreviations</div></button>
+						<button id="detectionTabButton" class="inactiveTab" data-target="detectionCont"><div id="detectionTabText">Detection</div></button>
+						<button id="sharedAbbrTabButton" class="inactiveTab" data-target="sharedAbbrCont"><div id="timezonesTabText">Timezones</div></button>
 					</div>
 					<div id="optionsTabs">
 						<div id="visualsCont" class="page visible">
@@ -59,13 +60,19 @@
 								<label><input type="checkbox" name="showClock" /><span id="showClock">Include an analogue clock next to times</span></label>
 							</div>
 						</div>
+						<div id="detectionCont" class="page">
+							<h4 id="blankSeparatorTitle">Hour/Minute Separator</h4>
+							<div class="columnOfInputs">
+								<label><input type="checkbox" name="blankSeparator" /><span id="blankSeparator">Allow times with no separator (e.g. 345pm)</span></label>
+							</div>
+						</div>
 						<div id="sharedAbbrCont" class="page">
-							<h4 id="sharedAbbrTitle">Timezones used by abbreviations</h4>
+							<h4 id="sharedAbbrTitle">Shared abbreviations</h4>
+							<p id="sharedAbbrDesc">Many timezones share an abbreviation.
+							You can select which are most relevant to you.</p>
 							<div class="scrollCont">
 								<ul id="userOffsetsList"></ul>
 							</div>
-							<p id="sharedAbbrDesc">Many timezones share an abbreviation.
-							You can select which are most relevant to you.</p>
 						</div>
 					</div>
 				</div>

@@ -309,6 +309,9 @@ p {
 	border-bottom: 2px solid var(--dark-border);
 	padding-bottom: 10px;
 }
+.tabButtons button {
+	border-radius: 0;
+}
 .tabButtons button:first-child {
 	border-radius: 2.5px 0 0 2.5px;
 }

@@ -54,20 +54,28 @@
 		"description": "Option text for converting to the user's local time"
 	},
 
+
 	"popupOptions": {
 		"message": "Options",
 		"description": "Title of the options page"
 	},
+
 
 	"popupVisuals": {
 		"message": "Visuals",
 		"description": "Button text for the visual options page tab"
 	},
 
-	"popupSharedAbbr": {
-		"message": "Shared Abbreviations",
-		"description": "Button text for the shared abbreviations options page tab"
+	"popupDetection": {
+		"message": "Detection",
+		"description": "Button text for the detection options page tab"
 	},
+
+	"popupTimezones": {
+		"message": "Timezones",
+		"description": "Button text for the timezones options page tab"
+	},
+
 
 	"popupTimeFormat": {
 		"message": "Time format",
@@ -88,19 +96,33 @@
 		"message": "24 hour",
 		"description": "24 hour option"
 	},
-	
+
+
 	"popupDisplayOptions": {
 		"message": "Display options",
 		"description": "Title of the display options section"
 	},
+
 
 	"popupShowClock": {
 		"message": "Include an analogue clock next to times",
 		"description": "Text for for the option to display an analogue clock next to the localised time"
 	},
 
+
+	"popupBlankSeparatorTitle": {
+		"message": "Hour/Minute Separator",
+		"description": "Title of the blank hour/minute separator option"
+	},
+
+	"popupBlankSeparatorDescription": {
+		"message": "Allow times with no separator (e.g. 345pm)",
+		"description": "Description for the blank separator option"
+	},
+
+
 	"popupSharedAbbrTitle": {
-		"message": "Timezones used by abbreviations",
+		"message": "Shared Abbreviations",
 		"description": "Title of the list section used to pick which timezones go with which abbreviation"
 	},
 

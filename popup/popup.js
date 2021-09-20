@@ -38,10 +38,13 @@ if (!('chrome' in window)) {
 const defaultSettings = {
 	defaults: { ...defaultTZ },
 	timeFormat: 0,
-	includeClock: true
+	includeClock: true,
+	blankSeparator: false
 }
 
 let userSettings = { ...defaultSettings }
+
+let settingsHaveChanged = false;
 
 window.addEventListener("DOMContentLoaded", () => {
 	//Get any saved data
@@ -54,25 +57,51 @@ window.addEventListener("DOMContentLoaded", () => {
 	});
 });
 
+window.addEventListener("blur", () => {
+	if (!settingsHaveChanged) { return; }
+
+	chrome.tabs.query(
+		{ active: true, currentWindow: true },
+		(tabs) => {
+			chrome.tabs.sendMessage(
+				tabs[0].id,
+				{ mode: "settings" }
+			);
+		}
+	);
+});
+
 function init() {
 
 	//Localise strings
 	[
 		["extensionNameText", "extensionName"],
+
 		["manualText", "popupManualConvert"],
 		["manualUsageHint", "popupManualConvertSourceText"],
+
 		["sandboxText", "popupSandboxText"],
 		["sandboxPageStr", "popupSandboxMode"],
 		["sandboxConvertTimesTo", "popupSandboxConvertTimesTo"],
+
 		["optionsText", "popupOptions"],
+
 		["visualsTabText", "popupVisuals"],
-		["sharedAbbrTabText", "popupSharedAbbr"],
+		["detectionTabText", "popupDetection"],
+		["timezonesTabText", "popupTimezones"],
+		
 		["timeFormatTitle", "popupTimeFormat"],
 		["timeFormatSystem", "popupTimeFormatSystem"],
 		["timeFormat12", "popupTimeFormat12"],
 		["timeFormat24", "popupTimeFormat24"],
+
 		["displayOptionsTitle", "popupDisplayOptions"],
+
 		["showClock", "popupShowClock"],
+
+		["blankSeparatorTitle", "popupBlankSeparatorTitle"],
+		["blankSeparator", "popupBlankSeparatorDescription"],
+
 		["sharedAbbrTitle", "popupSharedAbbrTitle"],
 		["sharedAbbrDesc", "popupSharedAbbrDesc"]
 	].forEach(i => {
@@ -92,9 +121,11 @@ function init() {
 
 	document.getElementById("optionsPage").addEventListener("click", toggleOptionsPageMode);
 	document.getElementById("visualsTabButton").addEventListener("click", changeOptionsTab);
+	document.getElementById("detectionTabButton").addEventListener("click", changeOptionsTab);
 	document.getElementById("sharedAbbrTabButton").addEventListener("click", changeOptionsTab);
 	document.getElementsByName("timeFormat").forEach(tF => tF.addEventListener("change", updateTimeFormatSetting));
 	document.getElementsByName("showClock")[0].addEventListener("change", updateShowClockSetting);
+	document.getElementsByName("blankSeparator")[0].addEventListener("change", updateBlankSeparatorSetting);
 
 	normalCont = document.getElementById("normalContent");
 	webpageCont = document.getElementById("webpageMode");
@@ -107,6 +138,10 @@ function init() {
 	normalCont.style.width = webpageCont.scrollWidth + "px";
 }
 
+function updateBlankSeparatorSetting() {
+	userSettings.blankSeparator = this.checked;
+	saveSettings();
+}
 function updateShowClockSetting() {
 	userSettings.includeClock = this.checked;
 	saveSettings();
@@ -117,6 +152,11 @@ function updateTimeFormatSetting() {
 }
 
 function saveSettings(rebuildTZList = false) {
+
+	if (!settingsHaveChanged) {
+		settingsHaveChanged = true;
+	}
+
 	chrome.storage.local.set(userSettings);
 
 	if (rebuildTZList) {
@@ -186,24 +226,17 @@ function buildSandboxTZList() {
 }
 
 function tzOffsetToString(tzMins) {
-	//What on earth is this ugly code
-	let tzSign = tzMins < 0 ? '-' : '+';
+	const tzSign = tzMins < 0 ? '-' : '+';
 
-	let hours = Math.floor(Math.abs(tzMins) / 60);
+	const hours = Math.floor(Math.abs(tzMins) / 60) % 24;
 
 	if (tzMins % 60 < 0) {
 		tzMins = Math.abs(tzMins);
 	}
 
-	if (hours > 23) {
-		hours = hours - 24 + '';
-	} else {
-		hours += '';
-	}
+	const minutes = String(tzMins % 60).padStart(2, '0');
 
-	let minutes = String(tzMins % 60).padStart(2, '0');
-
-	return tzSign + hours.padStart(2, '0') + ":" + minutes;
+	return tzSign + String(hours).padStart(2, '0') + ":" + minutes;
 }
 
 function useSelectedTimezone() {
@@ -361,6 +394,9 @@ function toggleOptionsPageMode() {
 		document.getElementsByName("timeFormat")[userSettings.timeFormat].checked = true;
 
 		document.getElementsByName("showClock")[0].checked = userSettings.includeClock;
+
+		document.getElementsByName("blankSeparator")[0].checked = userSettings.blankSeparator;
+
 
 		let frag = document.createDocumentFragment();
 		Object.keys(tzInfo).forEach(abbr => {

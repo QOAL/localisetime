@@ -42,7 +42,8 @@ const needsUppercaseIST = typeof window === "undefined" ? false : navigator.lang
 const defaultSettings = {
 	defaults: { ...defaultTZ },
 	timeFormat: 0,
-	includeClock: true
+	includeClock: true,
+	blankSeparator: false
 }
 
 let userSettings = { ...defaultSettings }
@@ -251,6 +252,13 @@ function contentMessageListener(request, sender, sendResponse) {
 
 			sendResponse(timeInfo);
 			break;
+		case 'settings':
+			//Reloads the users settings, to reflect any changes made.
+			chrome.storage.local.get(defaultSettings, data => {
+				userSettings = { defaults: { ...defaultSettings.defaults }, ...data };
+				buildTimeRegex()
+			});
+			break;
 	}
 }
 chrome.runtime.onMessage.addListener(contentMessageListener);
@@ -310,6 +318,9 @@ function spotTime(str, dateObj, manualTZ, correctedOffset) {
 		if (!match[_G.tzAbr] || typeof userSettings.defaults[upperTZ] === "undefined") { continue; }
 		//Demand the timezone abbreviation be all the same case
 		if (!(match[_G.tzAbr] === upperTZ || match[_G.tzAbr] === match[_G.tzAbr].toLowerCase())) { continue; }
+
+		//blank separator: Require : or . when minutes are given
+		if (!match[_G.separator] && match[_G.mins] && !userSettings.blankSeparator) { continue; }
 
 		//We need to change the start of the regex to... maybe (^|\s)
 		//The issue here is that : matches the word boundary, and if the input is "30:15 gmt" then it'll match "15 gmt"
