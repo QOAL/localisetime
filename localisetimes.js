@@ -192,7 +192,7 @@ function init() {
 	const thisYear = new Date().getUTCFullYear();
 	let tmpDate = new Date(Date.UTC(thisYear, 2, 0));
 	//Work out the day
-	let tmpDay = ((6 - tmpDate.getDay()) + 7) % 7;
+	let tmpDay = (6 - tmpDate.getDay()) % 7 + 7;
 	//2am on the second Sunday in March
 	const toDST = Date.UTC(thisYear, 2, tmpDay, 2);
 	//End of DST
@@ -366,11 +366,11 @@ function spotTime(str, dateObj, manualTZ, correctedOffset) {
 
 		if (tCorrected < 0) { tCorrected += 1440; }
 		//Build the localised time
-		let tmpExplode = m2h(tCorrected).split(":");
+		let tmpExplode = m2h(tCorrected);
 		let tmpDate = new Date(
 			dateObj.getFullYear(),
 			dateObj.getMonth(),
-			dateObj.getDay(),
+			dateObj.getDate(),
 			tmpExplode[0],
 			tmpExplode[1],
 			match[_G.seconds] ? match[_G.seconds].substring(1) : 0
@@ -418,11 +418,11 @@ function spotTime(str, dateObj, manualTZ, correctedOffset) {
 			startCorrected -= dateObj.getTimezoneOffset();
 
 			//Build the localised time
-			let tmpExplode = m2h(startCorrected).split(":");
+			let tmpExplode = m2h(startCorrected);
 			let tmpDate = new Date(
 				dateObj.getFullYear(),
 				dateObj.getMonth(),
-				dateObj.getDay(),
+				dateObj.getDate(),
 				tmpExplode[0],
 				tmpExplode[1],
 				match[_G.startSeconds] ? match[_G.startSeconds].substring(1) : 0
@@ -451,13 +451,9 @@ function spotTime(str, dateObj, manualTZ, correctedOffset) {
 }
 function m2h(mins) {
 	mins = Math.abs(mins);
-	var h = Math.floor(mins / 60);
-	if (h > 23) { h = h - 24 + ''; } else { h += ''; }
-	var m = (mins % 60) + '';
-	while (h.length < 2) { h = '0' + h; }
-	while (m.length < 2) { m = '0' + m; }
-	var tmp = h + ":" + m;
-	return tmp;
+	let h = Math.floor(mins / 60) % 24;
+	let m = mins % 60;
+	return [h, m];
 }
 function h2m(hours, mins) {
 	return (+hours * 60) + +mins;

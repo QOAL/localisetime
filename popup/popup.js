@@ -518,9 +518,8 @@ function selectThisOffset() {
 function m2h(mins) {
 	const sign = mins < 0;
 	mins = Math.abs(mins);
-	var h = Math.floor(mins / 60);
-	if (h > 23) { h = h - 24 };
-	var m = mins % 60;
+	let h = Math.floor(mins / 60) % 24;
+	let m = mins % 60;
 	return (sign ? '-' : '+') + String(h).padStart(2, '0') + ":" + String(m).padStart(2, '0');
 }
 
