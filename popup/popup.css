@@ -307,6 +307,8 @@ p {
 	white-space: pre-line;
 	font-size: 90%;
 	margin: 5px 0;
+	max-width: 330px;
+	box-sizing: border-box;
 }
 
 
