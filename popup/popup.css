@@ -191,24 +191,30 @@ button:active div {
 }
 
 h3 button {
+	display: flex;
+	align-items: center;
+}
+.bgRedButton {
 	background: rgba(var(--bg-col-rgb), 1);
 	font-size: medium;
 	padding: 4px 10px;
 	overflow: hidden;
 	display: flex;
 	align-items: center;
+	text-align: left;
 }
-h3 button:focus, h3 button:hover {
+.page > .bgRedButton { margin-top: 10px; }
+.bgRedButton:focus, .bgRedButton:hover {
 	background-color: var(--red-dark-blend);
 	/*
 		Sadly we can't mix colours with CSS just yet, so this is a premixed value
 		https://developer.mozilla.org/en-US/docs/Web/CSS/color_value/color-mix()
 	*/
 }
-h3 button:active {
+.bgRedButton:active {
 	background-color: rgba(var(--red-rgb), 1);
 }
-#sandboxPage svg {
+.bgRedButton svg {
 	margin-right: 8px;
 }
 
@@ -219,7 +225,9 @@ h3 > div {
 }
 #sandboxPage {
 	min-width: 115px;
-	text-align: left;
+}
+#abbrPage {
+	min-width: 125px;
 }
 #optionsPage {
 	background-color: transparent;
@@ -500,6 +508,7 @@ li input {
 	flex: 1 1 auto;
 	border-radius: 0 2.5px 2.5px 0;
 	transition: all .125s;
+	outline: none;
 }
 .scrollCont input + label {
 	--labelOpacity1: .1;
@@ -527,6 +536,28 @@ li input {
 }
 .scrollCont input:checked + label, .scrollCont input + label:focus, .scrollCont input + label:hover, .scrollCont input + label:active {
 	background-image: linear-gradient(to right, transparent, rgba(var(--labelColour), .15) 10px, rgba(var(--labelColour), var(--labelOpacity1)) 50%, rgba(var(--labelColour), var(--labelOpacity2)));
+}
+
+#userIgnoredList {
+	display: flex;
+	flex-direction: row;
+	flex-wrap: wrap;
+}
+#userIgnoredList div {
+	width: 25%;
+	text-align: center;
+	padding: 2px 0;
+	box-sizing: border-box;
+	border-radius: 2.5px;
+	outline: none;
+}
+#userIgnoredList div:hover, #userIgnoredList div:focus {
+	background-color: rgba(var(--red-rgb), .33);
+}
+#userIgnoredList div:active, #userIgnoredList div.ignored {
+	background-color: rgba(var(--red-rgb), 1);
+	font-weight: 600;
+	transition: all .25s;
 }
 
 
@@ -577,7 +608,7 @@ li input {
 		background: var(--bg-col-hex);
 		color: rgb(var(--bg-col-rgb));
 	}
-	h3 button {
+	.bgRedButton {
 		color: currentColor;
 	}
 	button:active div {

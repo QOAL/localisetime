@@ -41,6 +41,7 @@ const needsUppercaseIST = typeof window === "undefined" ? false : navigator.lang
 
 const defaultSettings = {
 	defaults: { ...defaultTZ },
+	ignored: [],
 	timeFormat: 0,
 	includeClock: true,
 	blankSeparator: false
@@ -318,6 +319,8 @@ function spotTime(str, dateObj, manualTZ, correctedOffset) {
 		if (!match[_G.tzAbr] || typeof userSettings.defaults[upperTZ] === "undefined") { continue; }
 		//Demand the timezone abbreviation be all the same case
 		if (!(match[_G.tzAbr] === upperTZ || match[_G.tzAbr] === match[_G.tzAbr].toLowerCase())) { continue; }
+		//Make sure the user isn't ignoring this abbreviation
+		if (userSettings.ignored.indexOf(match[_G.tzAbr].toUpperCase()) !== -1) { continue; }
 
 		//blank separator: Require : or . when minutes are given
 		if (!match[_G.separator] && match[_G.mins] && !userSettings.blankSeparator) { continue; }
@@ -416,6 +419,8 @@ function spotTime(str, dateObj, manualTZ, correctedOffset) {
 
 			let startCorrected = startMinsFromMidnight - userSettings.defaults[upperTZ] + hourOffset;
 			startCorrected -= dateObj.getTimezoneOffset();
+
+			if (startCorrected < 0) { startCorrected += 1440; }
 
 			//Build the localised time
 			let tmpExplode = m2h(startCorrected);

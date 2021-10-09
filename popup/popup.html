@@ -14,7 +14,7 @@
 						<path d="M7.34 1.03l-.5 1.1.2.96-1.79.75L4.69 3l-1.1-.4-.96.96.4 1.1.85.56-.75 1.81-.97-.22-1.1.5V8.7l1.06.47 1-.2.75 1.82-.84.53-.4 1.13.96.97L4.7 13l.56-.84 1.78.75-.19.96.5 1.1 1.38-.03.47-1.06L9 12.9l1.81-.75.56.84 1.1.4.97-.96L13 11.3l-.81-.53.75-1.81.97.19L15 8.69l-.03-1.38-1.06-.5-.97.22-.75-1.81.84-.56.4-1.1-.96-.97-1.13.41-.53.84L9 3.1l.19-.96-.47-1.1H7.34zM8 6a2 2 0 110 4 2 2 0 010-4z"/>
 					</svg>
 				</button>
-				<button id="sandboxPage">
+				<button id="sandboxPage" class="bgRedButton">
 					<div><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 9 16" width="7">
 						<path fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M1.5 14.5l6-6.5-6-6.5"/>
 					</svg><span id="sandboxPageStr">Sandbox</span></div>
@@ -67,11 +67,25 @@
 							</div>
 						</div>
 						<div id="sharedAbbrCont" class="page">
-							<h4 id="sharedAbbrTitle">Shared abbreviations</h4>
-							<p id="sharedAbbrDesc">Many timezones share an abbreviation.
-							You can select which are most relevant to you.</p>
-							<div class="scrollCont">
-								<ul id="userOffsetsList"></ul>
+							<button id="abbrPage" class="bgRedButton">
+								<div><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 9 16" width="7">
+									<path fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M1.5 14.5l6-6.5-6-6.5"/>
+								</svg><span id="sharedAbbrTitle">Shared abbreviations</span></div>
+							</button>
+							<div style="display:flex;position:relative;flex-direction: column;">
+								<div id="sharedAbbrPage" class="page visible">
+									<p id="sharedAbbrDesc">Many timezones share an abbreviation.
+									You can select which are most relevant to you.</p>
+									<div class="scrollCont">
+										<ul id="userOffsetsList"></ul>
+									</div>
+								</div>
+								<div id="ignoredAbbrPage" class="page">
+									<p id="ignoredAbbrDesc">Times using ignored abbreviations will not be localised in web pages.</p>
+									<div class="scrollCont">
+										<div id="userIgnoredList"></div>
+									</div>
+								</div>
 							</div>
 						</div>
 					</div>

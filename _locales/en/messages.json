@@ -132,6 +132,17 @@
 	},
 
 
+	"popupIgnoreAbbrTitle": {
+		"message": "Ignored Abbreviations",
+		"description": "Title of the list section used to pick abbreviations are ignored"
+	},
+
+	"popupIgnoreAbbrDesc": {
+		"message": "Times using ignored abbreviations will not be localised in web pages.",
+		"description": "Description of the ignored abbreviations selection"
+	},
+
+
 	"popupUnableToFunction": {
 		"message": "The extension is unable to function on this page.",
 		"description": "Displayed on pages that disallow the extension."
