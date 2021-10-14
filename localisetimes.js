@@ -31,6 +31,8 @@ const timeWithoutTZRegex = new RegExp('\\b(?:([01]?[0-9]|2[0-3])(:|\\.)?([0-5][0
 
 const whiteSpaceRegEx = /\s/g;
 
+const preceedingRegEx = /[:.,\d]/;
+
 let haveInsertedStaticCSS = false;
 
 let clockEle;
@@ -186,7 +188,8 @@ function toggleTime(e) {
 	//Stop any other events from firing (handy if this node is in a link)
 	e.preventDefault();
 }
-function init() {
+
+function workOutShortHandOffsets() {
 	//Work out the DST dates for the USA as part
 	// of special casing for DST agnostic PT/ET
 	//So first we need to get those dates (We could hard code them)
@@ -211,6 +214,10 @@ function init() {
 	userSettings.defaults.CT = dstAmerica ? defaultTZ.CDT : defaultTZ.CST;
 	userSettings.defaults.MT = dstAmerica ? defaultTZ.MDT : defaultTZ.MST;
 	//
+}
+
+function init() {
+	workOutShortHandOffsets();
 
 	//Give the page a once over now it has loaded
 	lookForTimes();
@@ -257,7 +264,8 @@ function contentMessageListener(request, sender, sendResponse) {
 			//Reloads the users settings, to reflect any changes made.
 			chrome.storage.local.get(defaultSettings, data => {
 				userSettings = { defaults: { ...defaultSettings.defaults }, ...data };
-				buildTimeRegex()
+				buildTimeRegex();
+				workOutShortHandOffsets();
 			});
 			break;
 	}
@@ -329,7 +337,11 @@ function spotTime(str, dateObj, manualTZ, correctedOffset) {
 		//The issue here is that : matches the word boundary, and if the input is "30:15 gmt" then it'll match "15 gmt"
 
 		//if (str[match.index - 1] === ":" || str[match.index - 1] === ".") { continue; }
-		if (str.substr(match.index - 1, 1) === ":" || str.substr(match.index - 1, 1) === ".") { continue; }
+		//if (str.substr(match.index - 1, 1) === ":" || str.substr(match.index - 1, 1) === ".") { continue; }
+		if (match.index > 0) {
+			const prevChar = str.substr(match.index - 1, 1);
+			if (preceedingRegEx.test(prevChar)) { continue; }
+		}
 
 		if (match[_G.tzAbr] === 'pt' && !(match[_G.meridiem] || match[_G.mins])) { continue; } //Temporary quirk to avoid matching font sizes
 

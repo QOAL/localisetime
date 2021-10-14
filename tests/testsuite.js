@@ -46,7 +46,9 @@ const tests = [
 	["2100 CEST", ["20:00"]],
 	["Sie sagt bei einer Inzidenz von unter 140 ist es...", [undefined]],
 	["Die Studiotechnik für 720p ist noch nicht abgeschrieben.", [undefined]],
+	["In Deutschland war Amazon 2020 mit einem Umsatz von", [undefined]],
 	["720p IST, 720pm ist", ["14:50", "14:50"]],
+	["7:20p IST, 7:20pm ist", ["14:50", "14:50"]],
 	["Der Schuss bei 1:14 ist sehr schoen abgestimmt. 10/10.", ["20:44"]],
 	["Starship dry mass should be ~105mt, propellant is 1,200mt, suggests ~1,300mt total mass, sans payload. Raptors produce ~ 200mt thrust, so six sea level engines should be able to lift a fully fueled Starship, assuming they red line thrust.", [undefined, undefined, undefined, undefined]]
 ]
@@ -166,11 +168,14 @@ function testStr(input, expects) {
 	const result = webExt.spotTime(input, dateObj)
 	//Return an for each matching time: [localisedTimeString, fullMatchingString, matchStartOffset, lengthOfTheFullMatchingString]
 
+	const failedAsExpected = (result.length === 0 && expects.every(e => e === undefined))
+
 	//Check that every result is expected (Needs to check both ways to catch missing entries)
-	//const pass = expects.every( e => result.includes(e) ) && result.every( e => expects.includes(e) )
-	//const pass = expects.every( (e,i) => { console.log(">",e, i, result[i][0]); return result[i][0] === e })
-	//const pass = expects.every( (e, i) => console.log("\x1b[47;30m>\x1b[0m", e, i, result[i] ? result[i][0] : false) )
-	const pass = (Math.max(1, result.length) === expects.length) && expects.every( (e, i) => e === (result && result[i] ? result[i][0] : undefined) )
+	const pass = failedAsExpected || (
+		(Math.max(1, result.length) === expects.length) && expects.every(
+			(e, i) => e === (result && result[i] ? result[i][0] : undefined)
+		)
+	)
 
 	if (pass) {
 		console.log(PassStyle, "PASS", Reset, input)
@@ -206,7 +211,7 @@ function testRandomTimes() {
 	let tmpTime
 	let shouldBeValid
 	let useNonsensePadding
-	const startTime = performance.now()
+	console.time("Execution time");
 	for (let i = 0; i < numRandTimes; i++) {
 		shouldBeValid = Math.random() > .25
 		useNonsensePadding = Math.random() >= .5
@@ -232,9 +237,11 @@ function testRandomTimes() {
 	}
 	if (errors > 0) {
 		console.log(`${FailStyle} ${errors} error${errors == 1 ? '' : 's'} occoured! ${Reset}`)
-		console.log(`${FailIndent}${likelyFalsePositives} of which ${likelyFalsePositives == 1 ? 'is' : 'are'} likely to be false positives`)
+		const plural = likelyFalsePositives !== 1;
+		const falsePosString = ['of which is likely to be a false positive', 'of which are likely to be false positives'][+plural]
+		console.log(`${FailIndent}${likelyFalsePositives} ${falsePosString}`)
 	} else {
 		console.log(`${PassStyle} No issues found ${Reset}`)
 	}
-	console.log(`${Math.round(performance.now() - startTime)} milliseconds elapsed`)
+	console.timeEnd("Execution time");
 }

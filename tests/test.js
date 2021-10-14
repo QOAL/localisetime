@@ -1,7 +1,7 @@
 const fs = require('fs')
 const { execFile } = require('child_process')
 
-console.log("\x1b[1;45m            \x1b[1;46m     \n\x1b[1;45;37m Localise\x1b[1;37;46m Times  \n\x1b[1;45m      \x1b[1;46m           \x1b[0m")
+console.log("\x1b[1;45m            \x1b[1;46m     \x1b[0m\n\x1b[1;45;37m Localise\x1b[1;37;46m Times  \x1b[0m\n\x1b[1;45m      \x1b[1;46m           \x1b[0m")
 
 fs.readFile('../localisetimes.js', {encoding: 'utf8'}, (err, data) => {
 	if (err) {
@@ -60,6 +60,9 @@ function patchWebExt(input) {
 	output = output.replace(/dateObj.getTimezoneOffset\(\);/g, "0;")
 	//Force north american time aliases into summer time
 	output = output.replace(/tmpNow = Date.now\(\);/, "tmpNow = Date.UTC(thisYear, 3, tmpDay, 2);");
+
+	//Enable blank separator support in the tests
+	output = output.replace("blankSeparator: false", "blankSeparator: true");
 
 	return output
 }

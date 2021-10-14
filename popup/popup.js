@@ -158,7 +158,7 @@ function updateShowClockSetting() {
 	saveSettings();
 }
 function updateTimeFormatSetting() {
-	userSettings.timeFormat = this.value;
+	userSettings.timeFormat = parseInt(this.value);
 	saveSettings();
 }
 
