@@ -2,7 +2,7 @@
 
   "manifest_version": 2,
   "name": "__MSG_extensionName__",
-  "version": "1.22.2",
+  "version": "1.23.0",
 
   "description": "__MSG_extensionDescription__",
 
@@ -19,7 +19,7 @@
       "matches": ["*://*/*"],
       "run_at": "document_end",
       "js": [
-        "localisetimes.js"
+        "popup/tzInfo.js", "localisetimes.js"
       ]
     }
   ],

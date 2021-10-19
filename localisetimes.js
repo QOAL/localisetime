@@ -1,8 +1,10 @@
 "use strict";
 
 let dateTimeFormats = Array(2);
-//PHP spat these timezone abbreviations out, and their offsets - There could be some missing
-const defaultTZ = {"ACDT":630,"ACST":570,"ACT":-300,"ACWST":525,"ADT":-180,"AEDT":660,"AEST":600,"AET":600,"AFT":270,"AKDT":-480,"AKST":-540,"AMST":-180,"AMT":-240,"ART":-180,"AST":180,"AWST":480,"AZOST":0,"AZOT":-60,"AZT":240,"BNT":480,"BIOT":360,"BIT":-720,"BOT":-240,"BRST":-120,"BRT":-180,"BST":60,"BTT":360,"CAT":120,"CCT":390,"CDT":-300,"CEST":120,"CET":60,"CHADT":825,"CHAST":765,"CHOT":480,"CHOST":540,"CHST":600,"CHUT":600,"CIST":480,"CKT":-600,"CLST":-180,"CLT":-240,"COST":-240,"COT":-300,"CST":-360,"CT":-360,"CVT":-60,"CWST":525,"CXT":420,"DAVT":420,"EASST":-300,"EAST":-360,"EAT":180,"ECT":-240,"EDT":-240,"EEST":180,"EET":120,"EGST":0,"EGT":-60,"EST":-300,"ET":-300,"FET":180,"FJT":720,"FKST":-180,"FKT":-240,"FNT":-120,"GALT":-360,"GAMT":-540,"GET":240,"GFT":-180,"GILT":720,"GIT":-540,"GMT":0,"GST":-120,"GYT":-240,"HDT":-540,"HAEC":120,"HST":-600,"HKT":480,"HMT":300,"ICT":420,"IDLW":-720,"IDT":180,"IOT":180,"IRDT":270,"IRKT":480,"IRST":210,"IST":330,"JST":540,"KALT":120,"KGT":360,"KOST":660,"KRAT":420,"KST":540,"LINT":840,"MAGT":720,"MART":-570,"MDT":-360,"MET":60,"MEST":120,"MHT":720,"MIT":-570,"MMT":390,"MSK":180,"MST":480,"MUT":240,"MVT":300,"MYT":480,"NCT":660,"NDT":-150,"NFT":660,"NPT":345,"NST":-210,"NT":-210,"NUT":-660,"NZDT":780,"NZST":720,"OMST":360,"PDT":-420,"PET":-300,"PETT":720,"PGT":600,"PHOT":780,"PHT":480,"PHST":480,"PKT":300,"PMDT":-120,"PMST":-180,"PONT":660,"PST":-480,"PYST":-180,"PYT":-240,"RET":240,"SAKT":660,"SAMT":240,"SAST":120,"SBT":660,"SCT":240,"SDT":-600,"SGT":480,"SLST":330,"SRET":660,"SRT":-180,"SST":-660,"TAHT":-600,"THA":420,"TJT":300,"TKT":780,"TLT":540,"TMT":300,"TRT":180,"TOT":780,"TVT":720,"ULAST":540,"ULAT":480,"UTC":0,"UYST":-120,"UYT":-180,"UZT":300,"VET":-240,"VLAT":600,"VOLT":240,"VUT":660,"WAKT":720,"WAST":120,"WAT":60,"WEST":60,"WET":0,"WIB":420,"WIT":540,"WITA":480,"WST":480,"YAKT":540,"YEKT":300,"PT":0,"MT":0,"CT":0,"ET":0};
+
+const shortHandInfo = {"PT": "Pacific Time", "ET": "Eastern Time", "CT": "Central Time", "MT": "Mountain Time"};
+
+const fullTitleRegEx = "[a-z \-'áéí–]{3,45}?(?= time) time";
 
 let timeRegex;
 
@@ -62,7 +64,7 @@ chrome.storage.local.get(defaultSettings, data => {
 });
 
 function buildTimeRegex() {
-	const tzaolStr = Object.keys(userSettings.defaults).join("|");
+	const tzaolStr = Object.keys(userSettings.defaults).join("|") + "|" + fullTitleRegEx;
 	timeRegex = new RegExp('\\b(?:([01]?[0-9]|2[0-3])(:|\\.)?([0-5][0-9])?(:[0-5][0-9])?(?: ?([ap]\\.?m?\\.?))? ?(to|until|til|and|[-\u2010-\u2015]) ?\\b)?([01]?[0-9]|2[0-3])(:|\\.)?([0-5][0-9])?(:[0-5][0-9])?(?: ?([ap]\\.?m?\\.?) )?(?: ?(' + tzaolStr + '))( ?(?:\\+|-) ?[0-9]{1,2})?\\b', 'giu');
 	//[-|\\u{8211}|\\u{8212}|\\u{8213}]
 }
@@ -323,36 +325,67 @@ function spotTime(str, dateObj, manualTZ, correctedOffset) {
 			upperTZ = match[_G.tzAbr].toUpperCase();
 		}
 
-		//Check that we have a match, with a valid timezone.
-		if (!match[_G.tzAbr] || typeof userSettings.defaults[upperTZ] === "undefined") { continue; }
-		//Demand the timezone abbreviation be all the same case
-		if (!(match[_G.tzAbr] === upperTZ || match[_G.tzAbr] === match[_G.tzAbr].toLowerCase())) { continue; }
-		//Make sure the user isn't ignoring this abbreviation
-		if (userSettings.ignored.indexOf(match[_G.tzAbr].toUpperCase()) !== -1) { continue; }
-
-		//blank separator: Require : or . when minutes are given
-		if (!match[_G.separator] && match[_G.mins] && !userSettings.blankSeparator) { continue; }
-
-		//We need to change the start of the regex to... maybe (^|\s)
-		//The issue here is that : matches the word boundary, and if the input is "30:15 gmt" then it'll match "15 gmt"
-
-		//if (str[match.index - 1] === ":" || str[match.index - 1] === ".") { continue; }
-		//if (str.substr(match.index - 1, 1) === ":" || str.substr(match.index - 1, 1) === ".") { continue; }
-		if (match.index > 0) {
-			const prevChar = str.substr(match.index - 1, 1);
-			if (preceedingRegEx.test(prevChar)) { continue; }
+		//If a detected timezone abbreviation includes a space, then we've actually found a full name
+		let fullNameOffset = false;
+		if (match[_G.tzAbr].indexOf(" ") !== -1) {
+			//To check if we've got a valid full name for a timezone,
+			// we need to do a little bit of work
+			const lcTZAbr = match[_G.tzAbr].toLowerCase();
+			const longNameInfo = Object.keys(tzInfo).find(tzK => {
+				return tzInfo[tzK].find(tzG => {
+					if (tzG.title.toLowerCase() === lcTZAbr) {
+						fullNameOffset = tzG.offset; 
+						return tzG;
+					}
+				})
+			})
+			if (longNameInfo && fullNameOffset !== false) {
+				match[_G.tzAbr] = longNameInfo;
+				upperTZ = match[_G.tzAbr].toUpperCase();
+			} else {
+				//We didn't find the timezone in that list, but it might be a short hand name
+				Object.keys(shortHandInfo).find(shK => {
+					if (shortHandInfo[shK].toLowerCase() === lcTZAbr) {
+						match[_G.tzAbr] = shK;
+						upperTZ = shK;
+						return true
+					}
+				})
+			}
 		}
 
-		if (match[_G.tzAbr] === 'pt' && !(match[_G.meridiem] || match[_G.mins])) { continue; } //Temporary quirk to avoid matching font sizes
+		if (fullNameOffset === false) {
+			//Check that we have a match, with a valid timezone.
+			if (!match[_G.tzAbr] || typeof userSettings.defaults[upperTZ] === "undefined") { continue; }
+			//Demand the timezone abbreviation be all the same case
+			if (!(match[_G.tzAbr] === upperTZ || match[_G.tzAbr] === match[_G.tzAbr].toLowerCase())) { continue; }
+			//Make sure the user isn't ignoring this abbreviation
+			if (userSettings.ignored.indexOf(match[_G.tzAbr].toUpperCase()) !== -1) { continue; }
 
-		if (match[_G.tzAbr] === 'ist' && !(match[_G.separator] || (match[_G.meridiem] && match[_G.meridiem] !== 'p'))) { continue; } //IST must be capitalised, if there's no separator
-		//Only people with German in their first 3 accepted languages will use this path, it's to avoid issues with the word "ist"
-		if (needsUppercaseIST && match[_G.tzAbr] === 'ist' && (!match[_G.meridiem] || match[_G.meridiem].length !== 2)) { continue; }
+			//blank separator: Require : or . when minutes are given
+			if (!match[_G.separator] && match[_G.mins] && !userSettings.blankSeparator) { continue; }
 
-		//Avoid cat and eat false positives
-		if ((match[_G.tzAbr] !== 'CAT' || match[_G.tzAbr] !== 'EAT') && !(match[_G.meridiem] || match[_G.mins])) { continue; }
-		const requiresSeparatorOrMeridiem = ['bit', 'mit'];
-		if (requiresSeparatorOrMeridiem.includes(match[_G.tzAbr]) && !(match[_G.separator] || match[_G.meridiem])) { continue; }
+			//We need to change the start of the regex to... maybe (^|\s)
+			//The issue here is that : matches the word boundary, and if the input is "30:15 gmt" then it'll match "15 gmt"
+
+			//if (str[match.index - 1] === ":" || str[match.index - 1] === ".") { continue; }
+			//if (str.substr(match.index - 1, 1) === ":" || str.substr(match.index - 1, 1) === ".") { continue; }
+			if (match.index > 0) {
+				const prevChar = str.substr(match.index - 1, 1);
+				if (preceedingRegEx.test(prevChar)) { continue; }
+			}
+
+			if (match[_G.tzAbr] === 'pt' && !(match[_G.meridiem] || match[_G.mins])) { continue; } //Temporary quirk to avoid matching font sizes
+
+			if (match[_G.tzAbr] === 'ist' && !(match[_G.separator] || (match[_G.meridiem] && match[_G.meridiem] !== 'p'))) { continue; } //IST must be capitalised, if there's no separator
+			//Only people with German in their first 3 accepted languages will use this path, it's to avoid issues with the word "ist"
+			if (needsUppercaseIST && match[_G.tzAbr] === 'ist' && (!match[_G.meridiem] || match[_G.meridiem].length !== 2)) { continue; }
+
+			//Avoid cat and eat false positives
+			if ((match[_G.tzAbr] !== 'CAT' || match[_G.tzAbr] !== 'EAT') && !(match[_G.meridiem] || match[_G.mins])) { continue; }
+			const requiresSeparatorOrMeridiem = ['bit', 'mit'];
+			if (requiresSeparatorOrMeridiem.includes(match[_G.tzAbr]) && !(match[_G.separator] || match[_G.meridiem])) { continue; }
+		}
 
 		let tHour = +match[_G.hours];
 		if (tHour == 0 && !match[_G.mins]) { continue; } //Bail if the hour is 0 and we have no minutes. (We could assume midnight)
@@ -372,7 +405,8 @@ function spotTime(str, dateObj, manualTZ, correctedOffset) {
 		if (match[_G.offset]) {
 			hourOffset = -(match[_G.offset].replace(whiteSpaceRegEx, '')) * 60;
 		}
-		let tCorrected = tMinsFromMidnight - userSettings.defaults[upperTZ] + hourOffset;
+		const mainOffset = (fullNameOffset !== false ? fullNameOffset : userSettings.defaults[upperTZ]) + hourOffset;
+		let tCorrected = tMinsFromMidnight - mainOffset;
 		if (correctedOffset) {
 			tCorrected += correctedOffset;
 		} else {
@@ -380,6 +414,7 @@ function spotTime(str, dateObj, manualTZ, correctedOffset) {
 		}
 
 		if (tCorrected < 0) { tCorrected += 1440; }
+
 		//Build the localised time
 		let tmpExplode = m2h(tCorrected);
 		let tmpDate = new Date(
@@ -390,6 +425,10 @@ function spotTime(str, dateObj, manualTZ, correctedOffset) {
 			tmpExplode[1],
 			match[_G.seconds] ? match[_G.seconds].substring(1) : 0
 		);
+		if (isNaN(tmpDate)) {
+			console.log(`Localise Times: Invlaid date time created for "${match[_G.fullStr]}"`);
+			continue;
+		}
 		let localeTimeString = formatLocalisedTime(tmpDate, match[_G.seconds])
 
 		let SVGTimes = [ ...tmpExplode ];
@@ -429,7 +468,7 @@ function spotTime(str, dateObj, manualTZ, correctedOffset) {
 			let startMins = (match[_G.startMins] ? match[_G.startMins] : 0);
 			let startMinsFromMidnight = h2m(startHour, startMins);
 
-			let startCorrected = startMinsFromMidnight - userSettings.defaults[upperTZ] + hourOffset;
+			let startCorrected = startMinsFromMidnight - mainOffset;
 			startCorrected -= dateObj.getTimezoneOffset();
 
 			if (startCorrected < 0) { startCorrected += 1440; }
@@ -444,16 +483,13 @@ function spotTime(str, dateObj, manualTZ, correctedOffset) {
 				tmpExplode[1],
 				match[_G.startSeconds] ? match[_G.startSeconds].substring(1) : 0
 			);
-			//Match the granularity of the output to the input
-			let timeFormat = { hour: 'numeric', minute: 'numeric' };
-			/*if (match[_G.startMins]) {
-				timeFormat.minute = 'numeric';
-			}*/
-			if (match[_G.startSeconds]) {
-				timeFormat.second = 'numeric';
+			if (isNaN(tmpDate)) {
+				console.log(`Localise Times: Invlaid date time created for "${match[_G.fullStr]}"`);
+				continue;
 			}
 			//It would be nice to avoid including the meridiem if it's the same as the main time
 			let timeSeparator = match[_G.timeSeparator].length === 1 ? "–" : match[_G.timeSeparator];
+			//Match the granularity of the output to the input
 			localeStartTimeString = formatLocalisedTime(tmpDate, match[_G.startSeconds]) + " " + timeSeparator + " ";//' – ';
 			//Should we capture the user defined separator and reuse it? - Yes, and we are now.
 

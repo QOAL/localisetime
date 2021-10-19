@@ -41,6 +41,7 @@ const handler = new DomHandler((error, dom) => {
 						)
 						.replace(/\(([^)]*)\)/, '')
 						.replace('unofficial', '')
+						.replace('French-language name for CEST', '')
 						.trim(),
 					((+sortValue.substring(0, 3) - 100) * 60) + +sortValue.substr(-2)//parseInt(eles[2].attribs['data-sort-value']) // Offset
 				)
@@ -72,9 +73,8 @@ function generateOutput(tzInfo) {
 		})
 
 	})
-	tzInfo = { ...tzInfo, ...{ PT: 0, MT: 0, CT: 0, ET: 0 } }
 
-	defaults = { ...defaults, ...defaultOverrides }
+	defaults = { ...defaults, ...defaultOverrides, ...{ PT: 0, MT: 0, CT: 0, ET: 0 } }
 
 	//console.log(tzInfoObj, defaults);
 	fs.writeFile('tzInfo.js', `const tzInfo = ${JSON.stringify(tzInfoObj)}\nconst defaultTZ = ${JSON.stringify(defaults)}`, err => {})

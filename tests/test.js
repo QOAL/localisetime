@@ -3,37 +3,46 @@ const { execFile } = require('child_process')
 
 console.log("\x1b[1;45m            \x1b[1;46m     \x1b[0m\n\x1b[1;45;37m Localise\x1b[1;37;46m Times  \x1b[0m\n\x1b[1;45m      \x1b[1;46m           \x1b[0m")
 
-fs.readFile('../localisetimes.js', {encoding: 'utf8'}, (err, data) => {
-	if (err) {
-		console.error("Error reading the web extension file\n", err)
+
+fs.readFile('../popup/tzInfo.js', {encoding: 'utf8'}, (errTZ, dataTZ) => {
+	if (errTZ) {
+		console.error("Error reading the web extension file\n", errTZ)
 		return
 	}
 
-	console.log("Web extension loaded...")
-
-	//Apply a few simple patches to the web extension so it's usable in the test suite
-	const webExt = patchWebExt(data)
-
-	fs.writeFile('testfile.js', webExt, err => {
+	fs.readFile('../localisetimes.js', {encoding: 'utf8'}, (err, data) => {
 		if (err) {
-			console.error("Error writing the test file\n", err)
+			console.error("Error reading the web extension file\n", err)
 			return
 		}
 
-		console.log("   ...rewritten and ready.")
+		console.log("Web extension loaded...")
 
-		const child = execFile('node', ['testsuite.js'], (error, stdout, stderr) => {
-			if (error) {
-				throw error
+		//Apply a few simple patches to the web extension so it's usable in the test suite
+		const webExt = patchWebExt(data, dataTZ)
+
+		fs.writeFile('testfile.js', webExt, err => {
+			if (err) {
+				console.error("Error writing the test file\n", err)
+				return
 			}
-			console.log(stdout)
-			fs.unlink('testfile.js', () => {})
-		})
 
+			console.log("   ...rewritten and ready.")
+
+			const child = execFile('node', ['testsuite.js'], (error, stdout, stderr) => {
+				if (error) {
+					throw error
+				}
+				console.log(stdout)
+				fs.unlink('testfile.js', () => {})
+			})
+
+		})
 	})
+	
 })
 
-function patchWebExt(input) {
+function patchWebExt(input, tzInfo) {
 	let output
 
 	//Remove some unnecessary function calls
@@ -63,6 +72,8 @@ function patchWebExt(input) {
 
 	//Enable blank separator support in the tests
 	output = output.replace("blankSeparator: false", "blankSeparator: true");
+
+	output = tzInfo + "\n" + output;
 
 	return output
 }
