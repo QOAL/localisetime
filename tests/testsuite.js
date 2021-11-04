@@ -1,69 +1,107 @@
 const webExt = require('./testfile')
-//spotTime(str, dateObj)
 
-const dateObj = new Date()
-
+// Console styling
 const Reset = "\x1b[0m"
 const PassStyle = "\x1b[1;42;37m"
 const FailStyle = "\x1b[1;41;37m"
 const FailIndent = "\x1b[1;41m \x1b[0m "
 const SoftFailStyle = "\x1b[1;40;33m"
 const SoftFailIndent = "\x1b[1;40m \x1b[0m "
+const InfoStyle = "\x1b[38;5;252m\x1b[48;5;237m"
 
+// Number of randomly generated time strings to test
 const numRandTimes = 10000
 
-//[ InputString, [LocalisedTime1, LocalisedTime2...] ]
-const tests = [
-	["16pt", [undefined]],
-	["2 past", [undefined]],
-	["15:10:30 PDT", ["23:10:30"]],
-	["5:30:15-7pm GMT", ["18:30:15 – 20:00"]],
-	["10a pt", ["18:00"]],
-	["6am UTC+4", ["03:00"]],
-	["2am UTC+0", ["03:00"]],
-	["10am-1pm JST", ["02:00 – 05:00"]],
-	["10am‒13 JST", ["02:00 – 05:00"]],
-	["10–1pm JST", ["02:00 – 05:00"]],
-	["10—1 JST", ["02:00 – 05:00"]],
-	["10am-9 JST", ["02:00 – 13:00"]],
-	["5PM PDT, 8PM EDT", ["01:00", "01:00"]],
-	["5PM PDT - 8PM EDT", ["01:00", "01:00"]],
-	["1:10 P. BST", ["13:10"]],
-	["1pm PT, 2pm MT, 3pm CT, 4pm ET", ["21:00", "21:00", "21:00", "21:00"]],
-	["a2{FF<JB) 1 A. \e rB[3mT- + ^EnWXUT B*vU3rm", [undefined]],
-	["n_<^Yut .g'e)J 1:40 p. ATTSSKXd 3et", ["08:00"]],
-	["24:00 CST", [undefined]],
-	["23:60 BST", [undefined]],
-	["00:00 CEST", ["23:00"]],
-	["00:00:9 CEST", [undefined]],
-	["1:10 p.m. cest", ["12:10"]],
-	["01:30 jst", ["17:30"]],
-	["1:30am jst", ["17:30"]],
-	["1:30pm jst", ["05:30"]],
-	["8| 01:30 jst", ["17:30"]],
-	["1 cat just isn't enough", [undefined]],
-	["02:37 KST", ["18:37"]],
-	["2100 CEST", ["20:00"]],
-	["Sie sagt bei einer Inzidenz von unter 140 ist es...", [undefined]],
-	["Die Studiotechnik für 720p ist noch nicht abgeschrieben.", [undefined]],
-	["In Deutschland war Amazon 2020 mit einem Umsatz von", [undefined]],
-	["720p IST, 720pm ist", ["14:50", "14:50"]],
-	["7:20p IST, 7:20pm ist", ["14:50", "14:50"]],
-	["Der Schuss bei 1:14 ist sehr schoen abgestimmt. 10/10.", ["20:44"]],
-	["Starship dry mass should be ~105mt, propellant is 1,200mt, suggests ~1,300mt total mass, sans payload. Raptors produce ~ 200mt thrust, so six sea level engines should be able to lift a fully fueled Starship, assuming they red line thrust.", [undefined, undefined, undefined, undefined]],
-	["9:37pm British Summer Time", ["21:37"]],
-	["November 4th at 6:00 AM Pacific Time", ["14:00"]]
-]
+// Whether or not to output about passed (non-random) tests
+const quietPasses = true
+
+/*
+
+	Use Etc/GMT+/-X instead of the locations time zone, as we force summertime currently
+	 (e.g. Etc/GMT+4 instead of america/new_york)
+
+	"TimezoneOffset": [
+		[ InputString, [LocalisedTime1, LocalisedTime2...] ]
+	]
+
+*/
+const tests = {
+	"Etc/GMT-1": [
+		["16pt", [undefined]],
+		["2 past", [undefined]],
+		["15:10:30 PDT", ["23:10:30"]],
+		["5:30:15-7pm GMT", ["18:30:15 – 20:00"]],
+		["10a pt", ["18:00"]],
+		["6am UTC+4", ["03:00"]],
+		["2am UTC+0", ["03:00"]],
+		["10am-1pm JST", ["02:00 – 05:00"]],
+		["10am‒13 JST", ["02:00 – 05:00"]],
+		["10–1pm JST", ["02:00 – 05:00"]],
+		["10—1 JST", ["02:00 – 05:00"]],
+		["10am-9 JST", ["02:00 – 13:00"]],
+		["5PM PDT, 8PM EDT", ["01:00", "01:00"]],
+		["5PM PDT - 8PM EDT", ["01:00", "01:00"]],
+		["1:10 P. BST", ["13:10"]],
+		["1pm PT, 2pm MT, 3pm CT, 4pm ET", ["21:00", "21:00", "21:00", "21:00"]],
+		["a2{FF<JB) 1 A. \e rB[3mT- + ^EnWXUT B*vU3rm", [undefined]],
+		["n_<^Yut .g'e)J 1:40 p. ATTSSKXd 3et", [undefined]], //"08:00"
+		["24:00 CST", [undefined]],
+		["23:60 BST", [undefined]],
+		["00:00 CEST", ["23:00"]],
+		["00:00:9 CEST", [undefined]],
+		["1:10 p.m. cest", ["12:10"]],
+		["01:30 jst", ["17:30"]],
+		["1:30am jst", ["17:30"]],
+		["1:30pm jst", ["05:30"]],
+		["8| 01:30 jst", ["17:30"]],
+		["1 cat just isn't enough", [undefined]],
+		["02:37 KST", ["18:37"]],
+		["2100 CEST", ["20:00"]],
+		["Sie sagt bei einer Inzidenz von unter 140 ist es...", [undefined]],
+		["Die Studiotechnik für 720p ist noch nicht abgeschrieben.", [undefined]],
+		["In Deutschland war Amazon 2020 mit einem Umsatz von", [undefined]],
+		["720p IST, 720pm ist", ["14:50", "14:50"]],
+		["7:20p IST, 7:20pm ist", ["14:50", "14:50"]],
+		["Der Schuss bei 1:14 ist sehr schoen abgestimmt. 10/10.", ["20:44"]],
+		["Starship dry mass should be ~105mt, propellant is 1,200mt, suggests ~1,300mt total mass, sans payload. Raptors produce ~ 200mt thrust, so six sea level engines should be able to lift a fully fueled Starship, assuming they red line thrust.", [undefined]],
+		["9:37pm British Summer Time", ["21:37"]],
+		["November 4th at 6:00 AM Pacific Time", ["14:00"]],
+		["A m;TR2S 2Rt~n#8V, .?Si2ya YzrLAgSf/ SV[2bst+ 1:30 p.m. NDT bJfHiD -mMmP CM3", ["17:00"]], //"02:00", "17:00"
+		["Only 1 cat per person, sorry!", [undefined]],
+		["See you at 1 CAT", [undefined]], //"00:00"
+		//["7pm - 21:00 UTC", [""]], //This is just a strangely formatted time range, I don't know what to do with it. (It's currently valid)
+	],
+	"Etc/GMT+7": [
+		["5:30:15-7pm GMT", ["10:30:15 – 12:00"]],
+		["10a pt", ["10:00"]],
+		["6am UTC+4", ["19:00"]],
+		["2am UTC+0", ["19:00"]],
+		["10am-1pm JST", ["18:00 – 21:00"]],
+		["5PM PDT, 8PM EDT", ["17:00", "17:00"]],
+		["5PM PST, 8PM EST", ["18:00", "18:00"]],
+		["1:10 P. BST", ["05:10"]],
+		["1pm PT, 2pm MT, 3pm CT, 4pm ET", ["13:00", "13:00", "13:00", "13:00"]]
+	]
+}
 let passCount = 0
+let totalTests = 0
 
 console.log("The test suite is now starting")
-//Check all the above tests pass
-tests.map( test => testStr(...test) )
+// Check all the above tests pass
+Object.keys(tests).forEach(tz => {
+	console.log(InfoStyle, `Testing times in ${tz} (${tests[tz].length} tests)`, Reset)
+	// Switch to the groups given time zone
+	webExt.changeTestTimezone(tz)
+	
+	totalTests += tests[tz].length
+
+	tests[tz].forEach(test => testStr(...test))
+})
 
 const outputStyle = passCount === tests.length ? PassStyle : FailStyle
 
 console.log("The results are in...")
-console.log(outputStyle, `${passCount} / ${tests.length} test${passCount == 1 ? '' : 's'} passed (${Math.round(passCount / tests.length * 100)}%)`, Reset)
+console.log(outputStyle, `${passCount} / ${totalTests} test${passCount == 1 ? '' : 's'} passed (${Math.round(passCount / totalTests * 100)}%)`, Reset)
 
 //Test against some random data
 console.log(`\nNow testing ${numRandTimes} random times`)
@@ -167,7 +205,7 @@ function getRandomInt(max) {
 }
 
 function testStr(input, expects) {
-	const result = webExt.spotTime(input, dateObj)
+	const result = webExt.spotTime(input)
 	//Return an for each matching time: [localisedTimeString, fullMatchingString, matchStartOffset, lengthOfTheFullMatchingString]
 
 	const failedAsExpected = (result.length === 0 && expects.every(e => e === undefined))
@@ -180,7 +218,9 @@ function testStr(input, expects) {
 	)
 
 	if (pass) {
-		console.log(PassStyle, "PASS", Reset, input)
+		if (!quietPasses) {
+			console.log(PassStyle, "PASS", Reset, input)
+		}
 		passCount++
 	} else {
 		console.log(FailStyle, "FAIL", Reset, input)
@@ -218,7 +258,7 @@ function testRandomTimes() {
 		shouldBeValid = Math.random() > .25
 		useNonsensePadding = Math.random() >= .5
 		tmpTime = randomTime({ 'includeTZ': shouldBeValid, 'padWithNonsense': useNonsensePadding })
-		result = webExt.spotTime(tmpTime[0], dateObj)
+		result = webExt.spotTime(tmpTime[0])
 		//Return an for each matching time: [localisedTimeString, fullMatchingString, matchStartOffset, lengthOfTheFullMatchingString]
 
 		const pass = shouldBeValid ? (tmpTime[1] ? result && result[0] && result[0][0].indexOf(" – ") !== -1 : result && result[0]) : result && result[0] === undefined

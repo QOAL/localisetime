@@ -26,7 +26,8 @@ const _G = {
 	seconds: 10,
 	meridiem: 11,
 	tzAbr: 12,
-	offset: 13
+	offset: 13,
+	_offsetWhiteSpace: 14
 };
 
 const timeWithoutTZRegex = new RegExp('\\b(?:([01]?[0-9]|2[0-3])(:|\\.)?([0-5][0-9])?(:[0-5][0-9])?(?: ?([ap]\\.?m?\\.?))? ?(to|until|til|and|or|[-\u2010-\u2015]) ?\\b)?([01]?[0-9]|2[0-3])(:|\\.)?([0-5][0-9])?(:[0-5][0-9])?(?: ?([ap]\\.?m?\\.?))?\\b', 'giu');
@@ -38,6 +39,8 @@ const preceedingRegEx = /[:.,\d]/;
 let haveInsertedStaticCSS = false;
 
 let clockEle;
+
+const dateObj = new Date();
 
 //Check the users (first 3) accepted languages, if one is German, then enforce IST being in upper case only as a time zone abbreviation.
 const needsUppercaseIST = typeof window === "undefined" ? false : navigator.languages.findIndex((l,i) => i < 3 && l.split("-")[0] === "de") !== -1
@@ -65,7 +68,8 @@ chrome.storage.local.get(defaultSettings, data => {
 
 function buildTimeRegex() {
 	const tzaolStr = Object.keys(userSettings.defaults).join("|") + "|" + fullTitleRegEx;
-	timeRegex = new RegExp('\\b(?:([01]?[0-9]|2[0-3])(:|\\.)?([0-5][0-9])?(:[0-5][0-9])?(?: ?([ap]\\.?m?\\.?))? ?(to|until|til|and|or|[-\u2010-\u2015]) ?\\b)?([01]?[0-9]|2[0-3])(:|\\.)?([0-5][0-9])?(:[0-5][0-9])?(?: ?([ap]\\.?m?\\.?) )?(?: ?(' + tzaolStr + '))( ?(?:\\+|-) ?[0-9]{1,2})?\\b', 'giu');
+	timeRegex = new RegExp('\\b(?:([01]?[0-9]|2[0-3])(:|\\.)?([0-5][0-9])?(:[0-5][0-9])?(?: ?([ap]\\.?m?\\.?))? ?(to|until|til|and|or|[-\u2010-\u2015]) ?\\b)?([01]?[0-9]|2[0-3])(:|\\.)?([0-5][0-9])?(:[0-5][0-9])?(?: ?([ap]\\.?m?\\.?) )?(?: ?(' + tzaolStr + '))(( ?)(?:\\+|-)\\14[0-9]{1,2})?\\b', 'giu');
+	
 	//[-|\\u{8211}|\\u{8212}|\\u{8213}]
 }
 
@@ -79,8 +83,6 @@ function lookForTimes(node = document.body, manualTZ) {
 	while(walker.nextNode()) {
 		nodes.push(walker.currentNode);
 	}
-
-	const dateObj = new Date();
 
 	for(var i = 0; node=nodes[i] ; i++) {
 
@@ -106,7 +108,7 @@ function lookForTimes(node = document.body, manualTZ) {
 		if (node.nodeValue.trim().length === 0) { continue; }
 
 		//Look at each text node, and try and find valid times
-		let timeInfo = spotTime(node.nodeValue, dateObj, manualTZ);
+		let timeInfo = spotTime(node.nodeValue, manualTZ);
 		//We get an array back, if it has stuff in it then take action
 		if (timeInfo.length === 0) { continue; }
 
@@ -194,22 +196,26 @@ function toggleTime(e) {
 function workOutShortHandOffsets() {
 	//Work out the DST dates for the USA as part
 	// of special casing for DST agnostic PT/ET
-	//So first we need to get those dates (We could hard code them)
+	//So first we need to get those dates
+	//We're switching all of these times between at once, rather than staggering them correctly
 	const thisYear = new Date().getUTCFullYear();
-	let tmpDate = new Date(Date.UTC(thisYear, 2, 0));
-	//Work out the day
-	let tmpDay = (6 - tmpDate.getDay()) % 7 + 7;
-	//2am on the second Sunday in March
-	const toDST = Date.UTC(thisYear, 2, tmpDay, 2);
+
+	//Begin DST
+	//2nd Sunday in March (2am local, 7am UTC)
+	let tmpDate = new Date(Date.UTC(thisYear, 2, 0, 7));
+	tmpDate.setUTCMonth(2, (7 - tmpDate.getUTCDay()) + 7);
+	const toDST = tmpDate.getTime();
+
 	//End of DST
-	tmpDate = new Date(Date.UTC(thisYear, 10, 0));
-	//Work out the day
-	tmpDay = (6 - tmpDate.getDay()) % 7;
-	//2am on the 1st Sunday in November
-	const fromDST = Date.UTC(thisYear, 10, tmpDay, 2);
-	//
+	//1st Sunday in November (2am local, 7am UTC)
+	tmpDate = new Date(Date.UTC(thisYear, 10, 0, 7));
+	tmpDate.setUTCMonth(10, 7 - tmpDate.getUTCDay());
+	const fromDST = tmpDate.getTime();
+
 	const tmpNow = Date.now();
-	const dstAmerica = tmpNow >= toDST && tmpNow <= fromDST;
+
+	const dstAmerica = tmpNow > toDST && tmpNow < fromDST;
+	
 	//Now we need to fill in the correct offset for PT/ET
 	userSettings.defaults.PT = dstAmerica ? defaultTZ.PDT : defaultTZ.PST;
 	userSettings.defaults.ET = dstAmerica ? defaultTZ.EDT : defaultTZ.EST;
@@ -258,7 +264,7 @@ function contentMessageListener(request, sender, sendResponse) {
 			break;
 		case 'sandbox':
 			const correctedOffset = userSettings.defaults.hasOwnProperty(request.timezone) ? userSettings.defaults[request.timezone] : undefined;
-			let timeInfo = spotTime(request.text, new Date(), undefined, correctedOffset);
+			let timeInfo = spotTime(request.text, undefined, correctedOffset);
 
 			sendResponse(timeInfo);
 			break;
@@ -274,7 +280,7 @@ function contentMessageListener(request, sender, sendResponse) {
 }
 chrome.runtime.onMessage.addListener(contentMessageListener);
 
-function spotTime(str, dateObj, manualTZ, correctedOffset) {
+function spotTime(str, manualTZ, correctedOffset) {
 	/*
 		A well thought out version of this would take into account for info
 		Such as words used in the tweet which might imply a date
@@ -382,12 +388,15 @@ function spotTime(str, dateObj, manualTZ, correctedOffset) {
 			if (needsUppercaseIST && match[_G.tzAbr] === 'ist' && (!match[_G.meridiem] || match[_G.meridiem].length !== 2)) { continue; }
 
 			//Avoid cat and eat false positives
-			if ((match[_G.tzAbr] !== 'CAT' || match[_G.tzAbr] !== 'EAT') && !(match[_G.meridiem] || match[_G.mins])) { continue; }
+			const requiresMeridiemOrMinsWithLowercase = ['cat', 'eat'];
+			if (requiresMeridiemOrMinsWithLowercase.includes(match[_G.tzAbr]) && !(match[_G.meridiem] || match[_G.mins])) { continue; } 
+			//if ((match[_G.tzAbr] !== 'CAT' || match[_G.tzAbr] !== 'EAT') && !(match[_G.meridiem] || match[_G.mins])) { continue; }
+
 			const requiresSeparatorOrMeridiem = ['bit', 'mit'];
 			if (requiresSeparatorOrMeridiem.includes(match[_G.tzAbr]) && !(match[_G.separator] || match[_G.meridiem])) { continue; }
 		}
 
-		let tHour = +match[_G.hours];
+		let tHour = parseInt(match[_G.hours]);
 		if (tHour == 0 && !match[_G.mins]) { continue; } //Bail if the hour is 0 and we have no minutes. (We could assume midnight)
 		if (match[_G.meridiem]) {
 			tHour = (12 + tHour) % 12;
@@ -397,13 +406,20 @@ function spotTime(str, dateObj, manualTZ, correctedOffset) {
 		} else if (match[_G.startHour] && tHour < 12 && tHour < match[_G.startHour]) {
 			//Non-exhaustive tHour/startHour test - This probably needs fleshing out?
 			tHour += 12;
+		} else if (tHour > 0 && tHour < 13 && !match[_G.meridiem] && !match[_G.mins]) {
+			//Skip this time if the hour is 1-12, and it lacks a meridiem and minutes
+			// Because it's a vague time.
+			continue;
 		}
-		let tMins = (match[_G.mins] ? match[_G.mins] : 0);
+		// I feel like we should handle mixed 12/24 hour times, in time ranges.
+		// "7pm - 21:00 UTC" looks really strange, but is currently valid.
+
+		let tMins = match[_G.mins] ? parseInt(match[_G.mins]) : 0;
 		let tMinsFromMidnight = h2m(tHour, tMins);
 		let hourOffset = 0;
 		//Sometimes people write a tz and then +X (like UTC+1)
 		if (match[_G.offset]) {
-			hourOffset = -(match[_G.offset].replace(whiteSpaceRegEx, '')) * 60;
+			hourOffset = parseInt(match[_G.offset].replace(whiteSpaceRegEx, '')) * 60;
 		}
 		const mainOffset = (fullNameOffset !== false ? fullNameOffset : userSettings.defaults[upperTZ]) + hourOffset;
 		let tCorrected = tMinsFromMidnight - mainOffset;
@@ -418,9 +434,9 @@ function spotTime(str, dateObj, manualTZ, correctedOffset) {
 		//Build the localised time
 		let tmpExplode = m2h(tCorrected);
 		let tmpDate = new Date(
-			dateObj.getFullYear(),
-			dateObj.getMonth(),
-			dateObj.getDate(),
+			dateObj.getUTCFullYear(),
+			dateObj.getUTCMonth(),
+			dateObj.getUTCDate(),
 			tmpExplode[0],
 			tmpExplode[1],
 			match[_G.seconds] ? match[_G.seconds].substring(1) : 0
@@ -465,7 +481,7 @@ function spotTime(str, dateObj, manualTZ, correctedOffset) {
 				}
 			}
 			//if (startHour > tHour) { console.warn("Invalid time range.", startHour, tHour); }
-			let startMins = (match[_G.startMins] ? match[_G.startMins] : 0);
+			let startMins = match[_G.startMins] ? +match[_G.startMins] : 0;
 			let startMinsFromMidnight = h2m(startHour, startMins);
 
 			let startCorrected = startMinsFromMidnight - mainOffset;
@@ -476,9 +492,9 @@ function spotTime(str, dateObj, manualTZ, correctedOffset) {
 			//Build the localised time
 			let tmpExplode = m2h(startCorrected);
 			let tmpDate = new Date(
-				dateObj.getFullYear(),
-				dateObj.getMonth(),
-				dateObj.getDate(),
+				dateObj.getUTCFullYear(),
+				dateObj.getUTCMonth(),
+				dateObj.getUTCDate(),
 				tmpExplode[0],
 				tmpExplode[1],
 				match[_G.startSeconds] ? match[_G.startSeconds].substring(1) : 0
@@ -509,7 +525,7 @@ function m2h(mins) {
 	return [h, m];
 }
 function h2m(hours, mins) {
-	return (+hours * 60) + +mins;
+	return (hours * 60) + mins;
 }
 
 const hour12 = [{}, { hour12: true }, { hour12: false }]

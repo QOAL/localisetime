@@ -1,0 +1,4 @@
+package-lock.json
+node_modules/
+build/*.zip
+tests/testfile.js
