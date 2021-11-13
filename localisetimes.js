@@ -91,7 +91,7 @@ function lookForTimes(node = document.body, manualTZ) {
 		let tmpNode = node;
 		let nodeCount = 0;
 		let skipThis = false;
-		while (tmpNode && tmpNode.parentNode && tmpNode !== document.body && nodeCount < 5) {
+		while (tmpNode && tmpNode.parentNode && tmpNode !== document.body && nodeCount < 6) {
 			if (tmpNode.parentNode.hasAttribute("contenteditable")) {
 				skipThis = true;
 				break;
@@ -242,7 +242,7 @@ function handleMutations(mutationsList, observer) {
 	mutationsList.forEach((mutation) => {
 		//handle mutations here
 		if (mutation.addedNodes.length > 0) {
-			nodeList.push(mutation.addedNodes[0]);
+			nodeList.push(...mutation.addedNodes);
 		}
 	});
 	//I don't know why I can't just fiddle with stuff as I look at the mutation list but whatever
@@ -394,6 +394,8 @@ function spotTime(str, manualTZ, correctedOffset) {
 
 			const requiresSeparatorOrMeridiem = ['bit', 'mit'];
 			if (requiresSeparatorOrMeridiem.includes(match[_G.tzAbr]) && !(match[_G.separator] || match[_G.meridiem])) { continue; }
+			//Manually converted times will easily match numbers without this
+			if (manualTZ && !(match[_G.separator] || match[_G.meridiem])) { continue; }
 		}
 
 		let tHour = parseInt(match[_G.hours]);
