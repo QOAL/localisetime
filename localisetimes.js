@@ -73,7 +73,6 @@ function buildTimeRegex() {
 	//[-|\\u{8211}|\\u{8212}|\\u{8213}]
 }
 
-
 function lookForTimes(node = document.body, manualTZ) {
 	//Walk the dom looking for text nodes
 	var walker = document.createTreeWalker(node, NodeFilter.SHOW_TEXT);
@@ -111,6 +110,13 @@ function lookForTimes(node = document.body, manualTZ) {
 		let timeInfo = spotTime(node.nodeValue, manualTZ);
 		//We get an array back, if it has stuff in it then take action
 		if (timeInfo.length === 0) { continue; }
+
+		//Check if we've hit a text element in an SVG
+		//We have to do a boring plain text replacement for this, as it'll be invalid otherwise
+		if (node.parentElement.tagName === "text") {
+			handleTextInSVG(node, timeInfo);
+			continue;
+		}
 
 		if (!haveInsertedStaticCSS) {
 			let tmpLink = document.createElement("link");
@@ -154,20 +160,47 @@ function lookForTimes(node = document.body, manualTZ) {
 			tmpTime.addEventListener("click", toggleTime);
 
 			//Do we have any more times to worry about?
-			if (timeInfo[t + 1]) {
-				//Yes
-				//Insert a text node containing all the text between the end of the current time and the start of the next one
-				tmpFrag.appendChild(document.createTextNode(node.textContent.substring(thisTime[2] + thisTime[3], timeInfo[t + 1][2])));
-			} else {
-				//No
-				//Fill in the remaining text
-				tmpFrag.appendChild(document.createTextNode(node.textContent.substring(thisTime[2] + thisTime[3])));
-			}
+			const endPos = timeInfo[t + 1] ?
+				//Yes - Insert a text node containing all the text between the end of the current time and the start of the next one
+				timeInfo[t + 1][2] :
+				//No - Fill in the remaining text
+				node.textContent.length;
+			tmpFrag.appendChild(document.createTextNode(node.textContent.substring(thisTime[2] + thisTime[3], endPos)));
 
 		})
 		//replace the old text node with our mangled one
 		node.parentElement.replaceChild(tmpFrag, node);
 	}
+}
+
+function handleTextInSVG(node, timeInfo) {
+	let newTextContent = node.textContent.substr(0, timeInfo[0][2]);
+
+	//We use detection of a clock to help prevent these times from being localised more than once
+	// So currently we are not obeying userSettings.includeClock
+	//Hours: U+1F550 - U+1F55B
+	//Half:  U+1F55C - U+1F567
+	//Decimal range: 128336 - 128359
+
+	const maybeClock = node.textContent.codePointAt(timeInfo[0][2] - 2);
+	if (maybeClock && maybeClock >= 128336 && maybeClock <= 128359) { return }
+
+	timeInfo.forEach((thisTime, t) => {
+		const whichClock = 
+			//Are we using the full hour or half hour version?
+			((thisTime[5] < 15 || thisTime[5] > 45) ? 0 : 12) +
+			//Which hour is it?
+			(thisTime[4] % 12) || 12;
+
+		newTextContent += String.fromCodePoint(128335 + whichClock) +
+			thisTime[0] +
+			node.textContent.substring(
+				thisTime[2] + thisTime[3],
+				timeInfo[t + 1] ? timeInfo[t + 1][2] : node.textContent.length
+			);
+	})
+
+	node.textContent = newTextContent;
 }
 
 function toggleTime(e) {
