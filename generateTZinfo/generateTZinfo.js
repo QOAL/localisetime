@@ -7,7 +7,7 @@ const CSSselect = require("css-select");
 
 let tzInfoObj = {}
 let defaults = {}
-const defaultOverrides = { "BST": 60 }
+const defaultOverrides = { "BST": 60, "MST": -420 }
 
 console.log("Generating tzInfo.js...")
 
