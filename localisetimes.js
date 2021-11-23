@@ -8,6 +8,8 @@ const fullTitleRegEx = "[a-z \-'áéí–]{3,45}?(?= time) time";
 
 let timeRegex;
 
+let manualTZ;
+
 //Match group enumeration
 const _G = {
 	fullStr: 0,
@@ -18,23 +20,22 @@ const _G = {
 	startSeconds: 4,
 	startMeridiem: 5,
 
-	timeSeparator: 6,
+	_timeSeparatorSpace: 6,
+	timeSeparator: 7,
 
-	hours: 7,
-	separator: 8,
-	mins: 9,
-	seconds: 10,
-	meridiem: 11,
-	tzAbr: 12,
-	offset: 13,
-	_offsetWhiteSpace: 14
+	hours: 8,
+	separator: 9,
+	mins: 10,
+	seconds: 11,
+	meridiem: 12,
+	tzAbr: 13,
+	offset: 14,
+	_offsetWhiteSpace: 15
 };
-
-const timeWithoutTZRegex = new RegExp('\\b(?:([01]?[0-9]|2[0-3])(:|\\.)?([0-5][0-9])?(:[0-5][0-9])?(?: ?([ap]\\.?m?\\.?))? ?(to|until|til|and|or|[-\u2010-\u2015]) ?\\b)?([01]?[0-9]|2[0-3])(:|\\.)?([0-5][0-9])?(:[0-5][0-9])?(?: ?([ap]\\.?m?\\.?))?\\b', 'giu');
 
 const whiteSpaceRegEx = /\s/g;
 
-const preceedingRegEx = /[:.,\d]/;
+const preceedingRegEx = /\S/;///[:.,'%\d]/;
 
 let haveInsertedStaticCSS = false;
 
@@ -44,7 +45,6 @@ const dateObj = new Date();
 
 //Check the users (first 3) accepted languages, if one is German, then enforce IST being in upper case only as a time zone abbreviation.
 const needsUppercaseIST = typeof window === "undefined" ? false : navigator.languages.findIndex((l,i) => i < 3 && l.split("-")[0] === "de") !== -1
-
 
 const defaultSettings = {
 	defaults: { ...defaultTZ },
@@ -68,12 +68,11 @@ chrome.storage.local.get(defaultSettings, data => {
 
 function buildTimeRegex() {
 	const tzaolStr = Object.keys(userSettings.defaults).join("|") + "|" + fullTitleRegEx;
-	timeRegex = new RegExp('\\b(?:([01]?[0-9]|2[0-3])(:|\\.)?([0-5][0-9])?(:[0-5][0-9])?(?: ?([ap]\\.?m?\\.?))? ?(to|until|til|and|or|[-\u2010-\u2015]) ?\\b)?([01]?[0-9]|2[0-3])(:|\\.)?([0-5][0-9])?(:[0-5][0-9])?(?: ?([ap]\\.?m?\\.?) )?(?: ?(' + tzaolStr + '))(( ?)(?:\\+|-)\\14[0-9]{1,2})?\\b', 'giu');
-	
+	timeRegex = new RegExp('\\b(?:([01]?[0-9]|2[0-3])(:|\\.)?([0-5][0-9])?(:[0-5][0-9])?(?: ?([ap]\\.?m?\\.?))?( ?)(to|until|til|and|or|[-\u2010-\u2015])\\6)?([01]?[0-9]|2[0-3])(:|\\.)?([0-5][0-9])?(:[0-5][0-9])?(?: ?([ap]\\.?m?\\.?)(?= \\w|\\b))?(?:(?: ?(' + tzaolStr + '))(( ?)(?:\\+|-)\\15[0-9]{1,2})?)?\\b', 'giu');
 	//[-|\\u{8211}|\\u{8212}|\\u{8213}]
 }
 
-function lookForTimes(node = document.body, manualTZ) {
+function lookForTimes(node = document.body) {
 	//Walk the dom looking for text nodes
 	var walker = document.createTreeWalker(node, NodeFilter.SHOW_TEXT);
 
@@ -107,7 +106,7 @@ function lookForTimes(node = document.body, manualTZ) {
 		if (node.nodeValue.trim().length === 0) { continue; }
 
 		//Look at each text node, and try and find valid times
-		let timeInfo = spotTime(node.nodeValue, manualTZ);
+		let timeInfo = spotTime(node.nodeValue);
 		//We get an array back, if it has stuff in it then take action
 		if (timeInfo.length === 0) { continue; }
 
@@ -140,7 +139,7 @@ function lookForTimes(node = document.body, manualTZ) {
 			let tmpTime = document.createElement("localisetime");
 			tmpTime.setAttribute("class", "localiseTime");
 			if (userSettings.includeClock) {
-				tmpTime.appendChild(newClockElement(thisTime[4], thisTime[5]));
+				tmpTime.appendChild(newClockElement(thisTime[5], thisTime[6]));
 			}
 
 			//tmpTime.style.cursor = "pointer"; //Indicate that it's interactive
@@ -149,10 +148,10 @@ function lookForTimes(node = document.body, manualTZ) {
 			tmpTimeText.textContent = thisTime[0];
 			tmpTime.appendChild(tmpTimeText); //Our converted time
 			//Let people mouse over the converted time to see what was actually written
-			tmpTime.setAttribute("title", chrome.i18n.getMessage("tooltipConverted", thisTime[1] + (manualTZ ? ' ' + manualTZ : '')));
+			tmpTime.setAttribute("title", chrome.i18n.getMessage("tooltipConverted", thisTime[1] + (thisTime[4] ? ' ' + manualTZ : '')));
 			tmpTime.setAttribute("data-localised", thisTime[0]); //Used when toggling
 			tmpTime.setAttribute("data-original", thisTime[1]); //Used when toggling
-			if (manualTZ) {
+			if (thisTime[4]) {
 				tmpTime.setAttribute("data-manualTZ", manualTZ); //Used when toggling
 			}
 			
@@ -293,11 +292,12 @@ function contentMessageListener(request, sender, sendResponse) {
 
 	switch (request.mode) {
 		case 'convert':
-			lookForTimes(document.body, request.selectedTZ);
+			manualTZ = request.selectedTZ;
+			lookForTimes(document.body);
 			break;
 		case 'sandbox':
 			const correctedOffset = userSettings.defaults.hasOwnProperty(request.timezone) ? userSettings.defaults[request.timezone] : undefined;
-			let timeInfo = spotTime(request.text, undefined, correctedOffset);
+			let timeInfo = spotTime(request.text, correctedOffset);
 
 			sendResponse(timeInfo);
 			break;
@@ -313,7 +313,7 @@ function contentMessageListener(request, sender, sendResponse) {
 }
 chrome.runtime.onMessage.addListener(contentMessageListener);
 
-function spotTime(str, manualTZ, correctedOffset) {
+function spotTime(str, correctedOffset) {
 	/*
 		A well thought out version of this would take into account for info
 		Such as words used in the tweet which might imply a date
@@ -343,25 +343,24 @@ function spotTime(str, manualTZ, correctedOffset) {
 	It's way more than this list now.
 	*/
 
-	let matches = [];
-	if (manualTZ) {
-		matches = str.matchAll(timeWithoutTZRegex);
-	} else {
-		matches = str.matchAll(timeRegex);
-	}
+	const matches = str.matchAll(timeRegex);
 
 	let timeInfo = [];
 	for (const match of matches) {
-
+//console.log(match, match[_G.tzAbr], manualTZ);
 		let upperTZ = '';
-		if (manualTZ) {
+		let usingManualTZ = false;
+		if (match[_G.tzAbr]) {
+			upperTZ = match[_G.tzAbr].toUpperCase();
+		} else if (manualTZ) {
 			//We need to be stricter on what times we detect when dealing with manual conversion
 			//Otherwise we'll have a lot of false positives!
 			if (!match[_G.mins] && !match[_G.meridiem]) { continue; }
 			upperTZ = manualTZ;
 			match[_G.tzAbr] = manualTZ;
+			usingManualTZ = true;
 		} else {
-			upperTZ = match[_G.tzAbr].toUpperCase();
+			continue;
 		}
 
 		//If a detected timezone abbreviation includes a space, then we've actually found a full name
@@ -428,7 +427,7 @@ function spotTime(str, manualTZ, correctedOffset) {
 			const requiresSeparatorOrMeridiem = ['bit', 'mit'];
 			if (requiresSeparatorOrMeridiem.includes(match[_G.tzAbr]) && !(match[_G.separator] || match[_G.meridiem])) { continue; }
 			//Manually converted times will easily match numbers without this
-			if (manualTZ && !(match[_G.separator] || match[_G.meridiem])) { continue; }
+			if (usingManualTZ && !(match[_G.separator] || match[_G.meridiem])) { continue; }
 		}
 
 		let tHour = parseInt(match[_G.hours]);
@@ -548,7 +547,7 @@ function spotTime(str, manualTZ, correctedOffset) {
 		}
 
 		//Store the localised time, the time that we matched, its offset and length
-		timeInfo.push([localeStartTimeString + localeTimeString, match[_G.fullStr], match.index, match[_G.fullStr].length, ...SVGTimes]);
+		timeInfo.push([localeStartTimeString + localeTimeString, match[_G.fullStr], match.index, match[_G.fullStr].length, usingManualTZ, ...SVGTimes]);
 	}
 
 	return timeInfo;

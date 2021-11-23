@@ -79,6 +79,7 @@ window.addEventListener("blur", () => {
 function init() {
 
 	//Localise strings
+	// [ElementID, StringName]
 	[
 		["extensionNameText", "extensionName"],
 

@@ -269,7 +269,7 @@ function testRandomTimes() {
 				likelyFalsePositives++
 			}
 			console.log(
-				`${useNonsensePadding ? SoftFailStyle : FailStyle} FAIL ${Reset} Time with${shouldBeValid ? '' : 'out'} timezone`,
+				`${useNonsensePadding ? SoftFailStyle : FailStyle} FAIL ${Reset} Time ${InfoStyle}with${shouldBeValid ? '' : 'out'}${Reset} timezone`,
 				`\n${useNonsensePadding ? SoftFailIndent : FailIndent} Input:`,
 				`\x1b[47;30m${tmpTime[0]}${Reset}`,
 				`\n${useNonsensePadding ? SoftFailIndent : FailIndent}Output:`,
