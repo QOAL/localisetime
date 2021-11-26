@@ -69,6 +69,8 @@ const tests = {
 		["A m;TR2S 2Rt~n#8V, .?Si2ya YzrLAgSf/ SV[2bst+ 1:30 p.m. NDT bJfHiD -mMmP CM3", ["17:00"]], //"02:00", "17:00"
 		["Only 1 cat per person, sorry!", [undefined]],
 		["See you at 1 CAT", [undefined]], //"00:00"
+		["Static fire test complete – targeting Tuesday, November 23 at 10:21 p.m. PT for Falcon 9’s launch of @NASA’s Double Asteroid Redirection Test", ["06:21"]],
+		["9am et 9am 9am pt", ["14:00", "17:00"]],
 		//["7pm - 21:00 UTC", [""]], //This is just a strangely formatted time range, I don't know what to do with it. (It's currently valid)
 	],
 	"Etc/GMT+7": [
