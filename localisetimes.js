@@ -107,12 +107,14 @@ function lookForTimes(node = document.body) {
 
 		//Look at each text node, and try and find valid times
 		let timeInfo = spotTime(node.nodeValue);
+
 		//We get an array back, if it has stuff in it then take action
 		if (timeInfo.length === 0) { continue; }
 
 		//Check if we've hit a text element in an SVG
 		//We have to do a boring plain text replacement for this, as it'll be invalid otherwise
-		if (node.parentElement.tagName === "text") {
+		const svgText = ["text", "tspan"];
+		if (svgText.includes(node.parentElement?.tagName) || svgText.includes(node.parentElement.parentElement?.tagName)) {
 			handleTextInSVG(node, timeInfo);
 			continue;
 		}
@@ -128,7 +130,7 @@ function lookForTimes(node = document.body) {
 
 		let tmpFrag = document.createDocumentFragment();
 		//Insert any text between the start of the string and the first time occurrence
-		tmpFrag.textContent = node.textContent.substr(0, timeInfo[0][2]);
+		tmpFrag.textContent = node.textContent.substr(0, timeInfo[0].matchPos);
 		//Go through each time we need to replace
 		timeInfo.forEach((thisTime, t) => {
 		//for (let t = 0; t < timeInfo.length; t++) {
@@ -139,19 +141,19 @@ function lookForTimes(node = document.body) {
 			let tmpTime = document.createElement("localisetime");
 			tmpTime.setAttribute("class", "localiseTime");
 			if (userSettings.includeClock) {
-				tmpTime.appendChild(newClockElement(thisTime[5], thisTime[6]));
+				tmpTime.appendChild(newClockElement(...thisTime.svgTimes));
 			}
 
 			//tmpTime.style.cursor = "pointer"; //Indicate that it's interactive
 			//tmpTime.style.borderBottom = "1px dotted currentColor"; //Modest styling that should fit in with any content
 			let tmpTimeText = document.createElement("span");
-			tmpTimeText.textContent = thisTime[0];
+			tmpTimeText.textContent = thisTime.localisedTime;
 			tmpTime.appendChild(tmpTimeText); //Our converted time
 			//Let people mouse over the converted time to see what was actually written
-			tmpTime.setAttribute("title", chrome.i18n.getMessage("tooltipConverted", thisTime[1] + (thisTime[4] ? ' ' + manualTZ : '')));
-			tmpTime.setAttribute("data-localised", thisTime[0]); //Used when toggling
-			tmpTime.setAttribute("data-original", thisTime[1]); //Used when toggling
-			if (thisTime[4]) {
+			tmpTime.setAttribute("title", chrome.i18n.getMessage("tooltipConverted", thisTime.fullStr + (thisTime.usingManualTZ ? ' ' + manualTZ : '')));
+			tmpTime.setAttribute("data-localised", thisTime.localisedTime); //Used when toggling
+			tmpTime.setAttribute("data-original", thisTime.fullStr); //Used when toggling
+			if (thisTime.usingManualTZ) {
 				tmpTime.setAttribute("data-manualTZ", manualTZ); //Used when toggling
 			}
 			
@@ -161,10 +163,10 @@ function lookForTimes(node = document.body) {
 			//Do we have any more times to worry about?
 			const endPos = timeInfo[t + 1] ?
 				//Yes - Insert a text node containing all the text between the end of the current time and the start of the next one
-				timeInfo[t + 1][2] :
+				timeInfo[t + 1].matchPos :
 				//No - Fill in the remaining text
 				node.textContent.length;
-			tmpFrag.appendChild(document.createTextNode(node.textContent.substring(thisTime[2] + thisTime[3], endPos)));
+			tmpFrag.appendChild(document.createTextNode(node.textContent.substring(thisTime.matchPos + thisTime.fullStr.length, endPos)));
 
 		})
 		//replace the old text node with our mangled one
@@ -173,7 +175,7 @@ function lookForTimes(node = document.body) {
 }
 
 function handleTextInSVG(node, timeInfo) {
-	let newTextContent = node.textContent.substr(0, timeInfo[0][2]);
+	let newTextContent = node.textContent.substr(0, timeInfo[0].matchPos);
 
 	//We use detection of a clock to help prevent these times from being localised more than once
 	// So currently we are not obeying userSettings.includeClock
@@ -187,15 +189,15 @@ function handleTextInSVG(node, timeInfo) {
 	timeInfo.forEach((thisTime, t) => {
 		const whichClock = 
 			//Are we using the full hour or half hour version?
-			((thisTime[5] < 15 || thisTime[5] > 45) ? 0 : 12) +
+			((thisTime.svgTimes[1] < 15 || thisTime.svgTimes[1] > 45) ? 0 : 12) +
 			//Which hour is it?
-			(thisTime[4] % 12) || 12;
+			((thisTime.svgTimes[0] % 12) || 12);
 
 		newTextContent += String.fromCodePoint(128335 + whichClock) +
-			thisTime[0] +
+			thisTime.localisedTime +
 			node.textContent.substring(
-				thisTime[2] + thisTime[3],
-				timeInfo[t + 1] ? timeInfo[t + 1][2] : node.textContent.length
+				thisTime.matchPos + thisTime.fullStr.length,
+				timeInfo[t + 1] ? timeInfo[t + 1].matchPos : node.textContent.length
 			);
 	})
 
@@ -547,7 +549,13 @@ function spotTime(str, correctedOffset) {
 		}
 
 		//Store the localised time, the time that we matched, its offset and length
-		timeInfo.push([localeStartTimeString + localeTimeString, match[_G.fullStr], match.index, match[_G.fullStr].length, usingManualTZ, ...SVGTimes]);
+		timeInfo.push({
+			localisedTime: localeStartTimeString + localeTimeString,
+			fullStr: match[_G.fullStr],
+			matchPos: match.index,
+			usingManualTZ: usingManualTZ,
+			svgTimes: SVGTimes
+		});
 	}
 
 	return timeInfo;

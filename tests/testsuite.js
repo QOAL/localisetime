@@ -215,7 +215,7 @@ function testStr(input, expects) {
 	//Check that every result is expected (Needs to check both ways to catch missing entries)
 	const pass = failedAsExpected || (
 		(Math.max(1, result.length) === expects.length) && expects.every(
-			(e, i) => e === (result && result[i] ? result[i][0] : undefined)
+			(e, i) => e === (result && result[i] ? result[i].localisedTime : undefined)
 		)
 	)
 
@@ -232,7 +232,7 @@ function testStr(input, expects) {
 					`${FailIndent}Expected:`,
 					`\x1b[47;30m${e}${Reset}`,
 					`\n${FailIndent}     Got:`,
-					`\x1b[47;30m${result && result[i] ? result[i][0] : undefined}${Reset}`
+					`\x1b[47;30m${result && result[i] ? result[i].localisedTime : undefined}${Reset}`
 				)
 			})
 		} else {
@@ -263,7 +263,7 @@ function testRandomTimes() {
 		result = webExt.spotTime(tmpTime[0])
 		//Return an for each matching time: [localisedTimeString, fullMatchingString, matchStartOffset, lengthOfTheFullMatchingString]
 
-		const pass = shouldBeValid ? (tmpTime[1] ? result && result[0] && result[0][0].indexOf(" – ") !== -1 : result && result[0]) : result && result[0] === undefined
+		const pass = shouldBeValid ? (tmpTime[1] ? result && result[0] && result[0].localisedTime.indexOf(" – ") !== -1 : result && result[0]) : result && result[0] === undefined
 
 		if (!pass) {
 			errors++
@@ -275,7 +275,7 @@ function testRandomTimes() {
 				`\n${useNonsensePadding ? SoftFailIndent : FailIndent} Input:`,
 				`\x1b[47;30m${tmpTime[0]}${Reset}`,
 				`\n${useNonsensePadding ? SoftFailIndent : FailIndent}Output:`,
-				`\x1b[47;30m${result && result[0] ? result[0][0] : undefined}${Reset}`
+				`\x1b[47;30m${result && result[0] ? result[0].localisedTime : undefined}${Reset}`
 			)
 		}
 	}

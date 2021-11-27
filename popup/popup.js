@@ -363,20 +363,20 @@ function sandboxProcessConvertResponse(timeInfo) {
 	let newText = "";
 
 	//Insert any text between the start of the string and the first time occurrence
-	newText = userText.substr(0, timeInfo[0][2]);
+	newText = userText.substr(0, timeInfo[0].matchPos);
 	//Go through each time we need to replace
 	timeInfo.forEach((thisTime, t) => {
-		newText += thisTime[0];
+		newText += thisTime.localisedTime;
 
 		//Do we have any more times to worry about?
 		if (timeInfo[t + 1]) {
 			//Yes
 			//Insert a text node containing all the text between the end of the current time and the start of the next one
-			newText += userText.substring(thisTime[2] + thisTime[3], timeInfo[t + 1][2]);
+			newText += userText.substring(thisTime.matchPos + thisTime.fullStr.length, timeInfo[t + 1].matchPos);
 		} else {
 			//No
 			//Fill in the remaining text
-			newText += userText.substring(thisTime[2] + thisTime[3]);
+			newText += userText.substring(thisTime.matchPos + thisTime.fullStr.length);
 		}
 
 	})
