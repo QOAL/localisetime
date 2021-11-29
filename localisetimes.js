@@ -53,7 +53,8 @@ const defaultSettings = {
 	ignored: [],
 	timeFormat: 0,
 	includeClock: true,
-	blankSeparator: true
+	blankSeparator: true,
+	avoidMatchingFloatsManually: true
 }
 
 let userSettings = { ...defaultSettings }
@@ -428,6 +429,9 @@ function spotTime(str, correctedOffset) {
 
 			//blank separator: Require : or . when minutes are given
 			if (!match[_G.separator] && match[_G.mins] && !userSettings.blankSeparator) { continue; }
+
+			//avoidMatchingFloatsManually: If we're manually converting times, ignore full stops used as time separators, with no meridiems (Can help avoid matching with numbers)
+			if (match[_G.separator] === "." && match[_G.mins] && !match[_G.meridiem] && userSettings.avoidMatchingFloatsManually) { continue; }
 
 			//We need to change the start of the regex to... maybe (^|\s)
 			//The issue here is that : matches the word boundary, and if the input is "30:15 gmt" then it'll match "15 gmt"

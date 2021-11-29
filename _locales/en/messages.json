@@ -121,6 +121,17 @@
 	},
 
 
+	"popupAvoidManualFloatsTitle": {
+		"message": "Manual conversion options",
+		"description": "Title of the option"
+	},
+
+	"popupAvoidManualFloatsDescription": {
+		"message": "Avoid times that could be non-integers",
+		"description": "Description for the blank separator option"
+	},
+
+
 	"popupSharedAbbrTitle": {
 		"message": "Shared Abbreviations",
 		"description": "Title of the list section used to pick which timezones go with which abbreviation"

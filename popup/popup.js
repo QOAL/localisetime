@@ -44,7 +44,14 @@ const defaultSettings = {
 	ignored: [],
 	timeFormat: 0,
 	includeClock: true,
-	blankSeparator: false
+	blankSeparator: true,
+	avoidMatchingFloatsManually: true
+}
+
+const optionsMap = {
+	showClock: "includeClock",
+	blankSeparator: "blankSeparator",
+	avoidManualFloats: "avoidMatchingFloatsManually",
 }
 
 let userSettings = { ...defaultSettings }
@@ -108,6 +115,9 @@ function init() {
 		["blankSeparatorTitle", "popupBlankSeparatorTitle"],
 		["blankSeparator", "popupBlankSeparatorDescription"],
 
+		["avoidManualFloatsTitle", "popupAvoidManualFloatsTitle"],
+		["avoidManualFloats", "popupAvoidManualFloatsDescription"],
+
 		["sharedAbbrDesc", "popupSharedAbbrDesc"],
 		["ignoredAbbrDesc", "popupIgnoreAbbrDesc"],
 
@@ -131,8 +141,9 @@ function init() {
 	document.getElementById("detectionTabButton").addEventListener("click", changeOptionsTab);
 	document.getElementById("sharedAbbrTabButton").addEventListener("click", changeOptionsTab);
 	document.getElementsByName("timeFormat").forEach(tF => tF.addEventListener("change", updateTimeFormatSetting));
-	document.getElementsByName("showClock")[0].addEventListener("change", updateShowClockSetting);
-	document.getElementsByName("blankSeparator")[0].addEventListener("change", updateBlankSeparatorSetting);
+	document.getElementsByName("showClock")[0].addEventListener("change", updateSetting);
+	document.getElementsByName("blankSeparator")[0].addEventListener("change", updateSetting);
+	document.getElementsByName("avoidManualFloats")[0].addEventListener("change", updateSetting);
 	document.getElementById("abbrPage").addEventListener("click", toggleAbbrPage);
 
 	normalCont = document.getElementById("normalContent");
@@ -150,12 +161,15 @@ function init() {
 	normalCont.style.width = webpageCont.scrollWidth + "px";
 }
 
-function updateBlankSeparatorSetting() {
-	userSettings.blankSeparator = this.checked;
-	saveSettings();
-}
-function updateShowClockSetting() {
-	userSettings.includeClock = this.checked;
+function updateSetting() {
+	const settingName = optionsMap[this.name];
+
+	if (!settingName) {
+		console.warn("Invalid setting name", this.name);
+		return;
+	}
+
+	userSettings[settingName] = this.checked;
 	saveSettings();
 }
 function updateTimeFormatSetting() {
@@ -407,6 +421,8 @@ function toggleOptionsPageMode() {
 		document.getElementsByName("showClock")[0].checked = userSettings.includeClock;
 
 		document.getElementsByName("blankSeparator")[0].checked = userSettings.blankSeparator;
+
+		document.getElementsByName("avoidManualFloats")[0].checked = userSettings.avoidMatchingFloatsManually;
 
 
 		buildSharedAbbrList();
