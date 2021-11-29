@@ -37,6 +37,8 @@ const whiteSpaceRegEx = /\s/g;
 
 const preceedingRegEx = /\S/;// /[:.,'%\d]/;
 
+const svgText = ["text", "tspan"];
+
 let haveInsertedStaticCSS = false;
 
 let clockEle;
@@ -67,8 +69,8 @@ chrome.storage.local.get(defaultSettings, data => {
 });
 
 function buildTimeRegex() {
-	const tzaolStr = Object.keys(userSettings.defaults).join("|") + "|" + fullTitleRegEx;
-	timeRegex = new RegExp('\\b(?:([01]?[0-9]|2[0-3])(:|\\.)?([0-5][0-9])?(:[0-5][0-9])?(?: ?([ap]\\.?m?\\.?))?( ?)(to|until|til|and|or|[-\u2010-\u2015])\\6)?([01]?[0-9]|2[0-3])(:|\\.)?([0-5][0-9])?(:[0-5][0-9])?(?: ?([ap]\\.?m?\\.?)(?= \\w|\\b))?(?:(?: ?(' + tzaolStr + '))(( ?)(?:\\+|-)\\15[0-9]{1,2})?)?\\b', 'giu');
+	//const tzaolStr = Object.keys(userSettings.defaults).join("|") + "|" + fullTitleRegEx;
+	timeRegex = new RegExp('\\b(?:([01]?[0-9]|2[0-3])(:|\\.)?([0-5][0-9])?(:[0-5][0-9])?(?: ?([ap]\\.?m?\\.?))?( ?)(to|until|til|and|or|[-\u2010-\u2015])\\6)?([01]?[0-9]|2[0-3])(:|\\.)?([0-5][0-9])?(:[0-5][0-9])?(?: ?([ap]\\.?m?\\.?)(?= \\w|\\b))?(?:(?: ?([a-z]{2,5}|' + fullTitleRegEx + '))(( ?)(?:\\+|-)\\15[0-9]{1,2})?)?\\b', 'giu');
 	//[-|\\u{8211}|\\u{8212}|\\u{8213}]
 }
 
@@ -113,9 +115,8 @@ function lookForTimes(node = document.body) {
 
 		//Check if we've hit a text element in an SVG
 		//We have to do a boring plain text replacement for this, as it'll be invalid otherwise
-		const svgText = ["text", "tspan"];
 		if (svgText.includes(node.parentElement?.tagName) || svgText.includes(node.parentElement.parentElement?.tagName)) {
-			handleTextInSVG(node, timeInfo);
+			handleTextNode(node, timeInfo);
 			continue;
 		}
 
@@ -174,8 +175,9 @@ function lookForTimes(node = document.body) {
 	}
 }
 
-function handleTextInSVG(node, timeInfo) {
-	let newTextContent = node.textContent.substr(0, timeInfo[0].matchPos);
+function handleTextNode(node, timeInfo) {
+
+	if (node.nodeType === 3) { node === node.parentNode; }
 
 	//We use detection of a clock to help prevent these times from being localised more than once
 	// So currently we are not obeying userSettings.includeClock
@@ -183,17 +185,19 @@ function handleTextInSVG(node, timeInfo) {
 	//Half:  U+1F55C - U+1F567
 	//Decimal range: 128336 - 128359
 
+	if (!timeInfo) {
+		timeInfo = spotTime(node.textContent);
+	}
+
+	if (timeInfo.length === 0) { return }
+
 	const maybeClock = node.textContent.codePointAt(timeInfo[0][2] - 2);
 	if (maybeClock && maybeClock >= 128336 && maybeClock <= 128359) { return }
 
-	timeInfo.forEach((thisTime, t) => {
-		const whichClock = 
-			//Are we using the full hour or half hour version?
-			((thisTime.svgTimes[1] < 15 || thisTime.svgTimes[1] > 45) ? 0 : 12) +
-			//Which hour is it?
-			((thisTime.svgTimes[0] % 12) || 12);
+	let newTextContent = node.textContent.substr(0, timeInfo[0].matchPos);
 
-		newTextContent += String.fromCodePoint(128335 + whichClock) +
+	timeInfo.forEach((thisTime, t) => {
+		newTextContent += emojiClock(thisTime.svgTimes[0], thisTime.svgTimes[1]) +
 			thisTime.localisedTime +
 			node.textContent.substring(
 				thisTime.matchPos + thisTime.fullStr.length,
@@ -201,7 +205,17 @@ function handleTextInSVG(node, timeInfo) {
 			);
 	})
 
-	node.textContent = newTextContent;
+	node.textContent = newTextContent;	
+}
+
+function emojiClock(hours, minutes) {
+	const whichClock = 
+		//Are we using the full hour or half hour version?
+		((minutes <= 15 || minutes > 45) ? 0 : 12) +
+		//Which hour is it?
+		((hours % 12) || 12);
+
+	return String.fromCodePoint(128335 + whichClock)
 }
 
 function toggleTime(e) {
@@ -276,9 +290,19 @@ function handleMutations(mutationsList, observer) {
 	mutationsList.forEach((mutation) => {
 		//handle mutations here
 		if (mutation.addedNodes.length > 0) {
-			nodeList.push(...mutation.addedNodes);
+			mutation.addedNodes.forEach(node => {
+				if (node.nodeType === Node.TEXT_NODE) {
+					if (node.nodeValue.trim().length > 0 && node.parentNode && node.parentNode.tagName !== "TEXTAREA") {
+						handleTextNode(node);
+					}
+				} else {
+					nodeList.push(node);
+				}
+			})
+			//nodeList.push(...mutation.addedNodes);
 		}
 	});
+
 	//I don't know why I can't just fiddle with stuff as I look at the mutation list but whatever
 	nodeList.forEach((mNode) => {
 		lookForTimes(mNode);
