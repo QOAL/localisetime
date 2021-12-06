@@ -70,8 +70,10 @@ chrome.storage.local.get(defaultSettings, data => {
 });
 
 function buildTimeRegex() {
-	//const tzaolStr = Object.keys(userSettings.defaults).join("|") + "|" + fullTitleRegEx;
-	timeRegex = new RegExp('\\b(?:([01]?[0-9]|2[0-3])(:|\\.)?([0-5][0-9])?(:[0-5][0-9])?(?: ?([ap]\\.?m?\\.?))?( ?)(to|until|til|and|or|[-\u2010-\u2015])\\6)?([01]?[0-9]|2[0-3])(:|\\.)?([0-5][0-9])?(:[0-5][0-9])?(?: ?([ap]\\.?m?\\.?)(?= \\w|\\b))?(?:(?: ?([a-z]{2,5}|' + fullTitleRegEx + '))(( ?)(?:\\+|-)\\15[0-9]{1,2})?)?\\b', 'giu');
+	const tzaolStr = Object.keys(userSettings.defaults).join("|") + "|" + fullTitleRegEx;
+	//13% faster, but causes issues when manually converting
+	//[a-z]{2,5}|' + fullTitleRegEx + '
+	timeRegex = new RegExp('\\b(?:([01]?[0-9]|2[0-3])(:|\\.)?([0-5][0-9])?(:[0-5][0-9])?(?: ?([ap]\\.?m?\\.?))?( ?)(to|until|til|and|or|[-\u2010-\u2015])\\6)?([01]?[0-9]|2[0-3])(:|\\.)?([0-5][0-9])?(:[0-5][0-9])?(?: ?([ap]\\.?m?\\.?)(?= \\w|\\b))?(?:(?: ?(' + tzaolStr + '))(( ?)(?:\\+|-)\\15[0-9]{1,2})?)?\\b', 'giu');
 	//[-|\\u{8211}|\\u{8212}|\\u{8213}]
 }
 
@@ -293,7 +295,9 @@ function handleMutations(mutationsList, observer) {
 		if (mutation.addedNodes.length > 0) {
 			mutation.addedNodes.forEach(node => {
 				if (node.nodeType === Node.TEXT_NODE) {
-					if (node.nodeValue.trim().length > 0 && node.parentNode && node.parentNode.tagName !== "TEXTAREA") {
+					if (node.nodeValue.trim().length > 0 &&
+						node.parentNode && node.parentNode.tagName !== "TEXTAREA" && node.parentNode.tagName !== "SCRIPT" &&
+						!(node.parentNode.parentNode && node.parentNode.parentNode.className === "localiseTime")) {
 						handleTextNode(node);
 					}
 				} else {
