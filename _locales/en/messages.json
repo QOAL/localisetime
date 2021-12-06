@@ -9,6 +9,18 @@
 		"description": "Description of the extension."
 	},
 
+
+	"popupDisableExtension": {
+		"message": "Pause the extension",
+		"description": "Pauses execution of the extension"
+	},
+
+	"popupEnableExtension": {
+		"message": "Resume the extension",
+		"description": "Resumes execution of the extension"
+	},
+
+
 	"popupManualConvert": {
 		"message": "Manually convert times missing a stated time zone",
 		"description": "Manual conversion feature text"
@@ -24,12 +36,30 @@
 		"description": "OK"
 	},
 
-	"popupSandboxMode": {
+
+	"popupCurrentlyUsedManualConversionTime": {
+		"message": "Currently converting using $TIME$",
+		"description": "Informs the user of the current time zone abbreviation being used to manually localise times",
+		"placeholders": {
+			"time": {
+				"content": "$1",
+				"example": "16:45 CET"
+			}
+		}
+	},
+
+	"stop": {
+		"message": "Stop",
+		"description": "Stop"
+	},
+
+
+	"popupSandboxTabText": {
 		"message": "Sandbox",
 		"description": "Name of the sandbox mode"
 	},
 
-	"popupWebpageMode": {
+	"popupWebpageTabText": {
 		"message": "Webpage",
 		"description": "Name of the webpage mode"
 	},

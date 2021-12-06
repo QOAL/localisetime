@@ -9,95 +9,107 @@
 	<body>
 		<h3><span id="extensionNameText">Localise Times</span>
 			<div>
-				<button id="optionsPage">
+				<button id="pauseExtension" class="buttonSVG" title="Pause the extension">
+					<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+						<path d="M5 2.5L5 21.5L9.5 21.5L9.5 2.5L5 2.5M14.5 2.5L14.5 21.5L19 21.5L19 2.5L14.5 2.5">
+							<animate id="animateToPlay" begin="indefinite" fill="freeze" attributeName="d" dur="250ms" to="M4.535 2L4.535 22L11.535 17.883L11.535 6.117L4.535 2M11.535 6.117L11.535 17.883L21.535 12L21.535 12L11.535 6.117"></animate>
+							<animate id="animateToPause" begin="indefinite" fill="freeze" attributeName="d" dur="250ms" to="M5 2.5L5 21.5L9.5 21.5L9.5 2.5L5 2.5M14.5 2.5L14.5 21.5L19 21.5L19 2.5L14.5 2.5"></animate>
+						</path>
+					</svg>
+				</button>
+				<button id="optionsPage" class="buttonSVG" title="Options">
 					<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16">
 						<path d="M7.34 1.03l-.5 1.1.2.96-1.79.75L4.69 3l-1.1-.4-.96.96.4 1.1.85.56-.75 1.81-.97-.22-1.1.5V8.7l1.06.47 1-.2.75 1.82-.84.53-.4 1.13.96.97L4.7 13l.56-.84 1.78.75-.19.96.5 1.1 1.38-.03.47-1.06L9 12.9l1.81-.75.56.84 1.1.4.97-.96L13 11.3l-.81-.53.75-1.81.97.19L15 8.69l-.03-1.38-1.06-.5-.97.22-.75-1.81.84-.56.4-1.1-.96-.97-1.13.41-.53.84L9 3.1l.19-.96-.47-1.1H7.34zM8 6a2 2 0 110 4 2 2 0 010-4z"/>
 					</svg>
 				</button>
-				<button id="sandboxPage" class="bgRedButton">
-					<div><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 9 16" width="7">
-						<path fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M1.5 14.5l6-6.5-6-6.5"/>
-					</svg><span id="sandboxPageStr">Sandbox</span></div>
-				</button>
 			</div>
 		</h3>
-		<div>
-			<div id="normalContent">
-				<div id="webpageMode" class="page visible">
-					<h5 id="manualText">Manually convert times missing a stated time zone</h5>
-					<span id="manualUsageHint">Please select the source time zone:</span>
-					<div id="selectOKCont">
-						<label class="selectLabel"><select id="tzList"><option value="UTC" selected>UTC (UTC+00:00)</option></select><div></div></label>
-						<button id="useSelectedTimezone"><div class="okText">OK</div></button>
+		<div id="normalContent">
+			<div id="functionsMode" class="page visible">
+				<div class="tabButtons">
+					<button id="webpageTabButton" class="currentTab" data-target="webpageMode"><div id="webpageTabText">Webpage</div></button>
+					<button id="sandboxTabButton" class="inactiveTab" data-target="sandboxMode"><div id="sandboxTabText">Sandbox</div></button>
+				</div>
+				<div class="tabsCont">
+					<div id="webpageMode" class="page visible">
+						<h5 id="manualText">Manually convert times missing a stated time zone</h5>
+						<span id="manualUsageHint">Please select the source time zone:</span>
+						<div id="selectOKCont">
+							<label class="selectLabel"><select id="tzList"><option value="UTC" selected>UTC (UTC+00:00)</option></select><div></div></label>
+							<button id="useSelectedTimezone"><div class="okText">OK</div></button>
+						</div>
+						<div id="currentManualTZCont">
+							<span id="currentManualTZ">Currently converting using none</span>
+							<button id="stopManualTZ">Stop</button>
+						</div>
+					</div>
+					<div id="sandboxMode" class="page">
+						<h5 id="sandboxText">Time localisation sandbox</h5>
+						<textarea id="sandboxTextarea" placeholder="Enter some text here"></textarea>
+						<span id="sandboxConvertTimesTo">Convert times to:</span>
+						<div id="selectOKCont">
+							<label class="selectLabel"><select id="tzListSandbox"><option value="UTC" selected>UTC (UTC+00:00)</option></select><div></div></label>
+							<button id="sandboxConvertBtn"><div class="okText">OK</div></button>
+						</div>
 					</div>
 				</div>
-				<div id="sandboxMode" class="page">
-					<h5 id="sandboxText">Time localisation sandbox</h5>
-					<textarea id="sandboxTextarea" placeholder="Enter some text here"></textarea>
-					<span id="sandboxConvertTimesTo">Convert times to:</span>
-					<div id="selectOKCont">
-						<label class="selectLabel"><select id="tzListSandbox"><option value="UTC" selected>UTC (UTC+00:00)</option></select><div></div></label>
-						<button id="sandboxConvertBtn"><div class="okText">OK</div></button>
-					</div>
+			</div>
+			<div id="optionsMode" class="page">
+				<div class="tabButtons">
+					<button id="visualsTabButton" class="currentTab" data-target="visualsCont"><div id="visualsTabText">Visuals</div></button>
+					<button id="detectionTabButton" class="inactiveTab" data-target="detectionCont"><div id="detectionTabText">Detection</div></button>
+					<button id="sharedAbbrTabButton" class="inactiveTab" data-target="sharedAbbrCont"><div id="timezonesTabText">Timezones</div></button>
 				</div>
-				<div id="optionsMode" class="page">
-					<h5 id="optionsText">Options</h5>
-					<div class="tabButtons">
-						<button id="visualsTabButton" class="currentTab" data-target="visualsCont"><div id="visualsTabText">Visuals</div></button>
-						<button id="detectionTabButton" class="inactiveTab" data-target="detectionCont"><div id="detectionTabText">Detection</div></button>
-						<button id="sharedAbbrTabButton" class="inactiveTab" data-target="sharedAbbrCont"><div id="timezonesTabText">Timezones</div></button>
+				<div class="tabsCont">
+					<div id="visualsCont" class="page visible">
+						<h4 id="timeFormatTitle">Time format</h4>
+						<div class="columnOfInputs">
+							<label><input type="radio" name="timeFormat" value="0" checked /><span id="timeFormatSystem">System</span></label>
+							<label><input type="radio" name="timeFormat" value="1" /><span id="timeFormat12">12 Hour</span></label>
+							<label><input type="radio" name="timeFormat" value="2" /><span id="timeFormat24">24 Hour</span></label>
+						</div>
+						<h4 id="displayOptionsTitle">Display options</h4>
+						<div class="columnOfInputs">
+							<label><input type="checkbox" name="showClock" /><span id="showClock">Include an analogue clock next to times</span></label>
+						</div>
 					</div>
-					<div id="optionsTabs">
-						<div id="visualsCont" class="page visible">
-							<h4 id="timeFormatTitle">Time format</h4>
-							<div class="columnOfInputs">
-								<label><input type="radio" name="timeFormat" value="0" checked /><span id="timeFormatSystem">System</span></label>
-								<label><input type="radio" name="timeFormat" value="1" /><span id="timeFormat12">12 Hour</span></label>
-								<label><input type="radio" name="timeFormat" value="2" /><span id="timeFormat24">24 Hour</span></label>
-							</div>
-							<h4 id="displayOptionsTitle">Display options</h4>
-							<div class="columnOfInputs">
-								<label><input type="checkbox" name="showClock" /><span id="showClock">Include an analogue clock next to times</span></label>
-							</div>
+					<div id="detectionCont" class="page">
+						<h4 id="blankSeparatorTitle">Hour/Minute Separator</h4>
+						<div class="columnOfInputs">
+							<label><input type="checkbox" name="blankSeparator" /><span id="blankSeparator">Allow times with no separator (e.g. 345pm)</span></label>
 						</div>
-						<div id="detectionCont" class="page">
-							<h4 id="blankSeparatorTitle">Hour/Minute Separator</h4>
-							<div class="columnOfInputs">
-								<label><input type="checkbox" name="blankSeparator" /><span id="blankSeparator">Allow times with no separator (e.g. 345pm)</span></label>
-							</div>
-							<h4 id="avoidManualFloatsTitle">Manual conversion options</h4>
-							<div class="columnOfInputs">
-								<label><input type="checkbox" name="avoidManualFloats" /><span id="avoidManualFloats">Avoid times that could be non-integers</span></label>
-							</div>
+						<h4 id="avoidManualFloatsTitle">Manual conversion options</h4>
+						<div class="columnOfInputs">
+							<label><input type="checkbox" name="avoidManualFloats" /><span id="avoidManualFloats">Avoid times that could be non-integers</span></label>
 						</div>
-						<div id="sharedAbbrCont" class="page">
-							<button id="abbrPage" class="bgRedButton">
-								<div><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 9 16" width="7">
-									<path fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M1.5 14.5l6-6.5-6-6.5"/>
-								</svg><span id="sharedAbbrTitle">Shared abbreviations</span></div>
-							</button>
-							<div style="display:flex;position:relative;flex-direction: column;">
-								<div id="sharedAbbrPage" class="page visible">
-									<p id="sharedAbbrDesc">Many timezones share an abbreviation.
-									You can select which are most relevant to you.</p>
-									<div class="scrollCont">
-										<ul id="userOffsetsList"></ul>
-									</div>
+					</div>
+					<div id="sharedAbbrCont" class="page">
+						<button id="abbrPage" class="bgRedButton">
+							<div><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 9 16" width="7">
+								<path fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M1.5 14.5l6-6.5-6-6.5"/>
+							</svg><span id="sharedAbbrTitle">Shared abbreviations</span></div>
+						</button>
+						<div style="display:flex;position:relative;flex-direction: column;">
+							<div id="sharedAbbrPage" class="page visible">
+								<p id="sharedAbbrDesc">Many timezones share an abbreviation.
+								You can select which are most relevant to you.</p>
+								<div class="scrollCont">
+									<ul id="userOffsetsList"></ul>
 								</div>
-								<div id="ignoredAbbrPage" class="page">
-									<p id="ignoredAbbrDesc">Times using ignored abbreviations will not be localised in web pages.</p>
-									<div class="scrollCont">
-										<div id="userIgnoredList"></div>
-									</div>
+							</div>
+							<div id="ignoredAbbrPage" class="page">
+								<p id="ignoredAbbrDesc">Times using ignored abbreviations will not be localised in web pages.</p>
+								<div class="scrollCont">
+									<div id="userIgnoredList"></div>
 								</div>
 							</div>
 						</div>
 					</div>
 				</div>
 			</div>
-			<div id="blockedHereContent">
-				The extension is unable to function on this page.
-			</div>
+		</div>
+		<div id="blockedHereContent">
+			The extension is unable to function on this page.
 		</div>
 	</body>
 </html>

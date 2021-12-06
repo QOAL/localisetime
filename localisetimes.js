@@ -1,5 +1,7 @@
 "use strict";
 
+let observer;
+
 let dateTimeFormats = Array(2);
 
 const shortHandInfo = {"PT": "Pacific Time", "ET": "Eastern Time", "CT": "Central Time", "MT": "Mountain Time"};
@@ -54,7 +56,8 @@ const defaultSettings = {
 	timeFormat: 0,
 	includeClock: true,
 	blankSeparator: true,
-	avoidMatchingFloatsManually: true
+	avoidMatchingFloatsManually: true,
+	emabled: true
 }
 
 let userSettings = { ...defaultSettings }
@@ -282,8 +285,10 @@ function init() {
 	lookForTimes();
 
 	//We need to watch for modifications to the document.body, so we can check for new text nodes to look at
-	const observer = new MutationObserver(handleMutations);
-	observer.observe(document.body, {attributes: false, childList: true, subtree: true});
+	observer = new MutationObserver(handleMutations);
+	if (userSettings.enabled) {
+		observer.observe(document.body, {attributes: false, childList: true, subtree: true});
+	}
 }
 function handleMutations(mutationsList, observer) {
 	//Disconnect so we don't trigger mutations as we localise times
@@ -322,16 +327,26 @@ function contentMessageListener(request, sender, sendResponse) {
 	if (!request.hasOwnProperty('mode')) { return }
 
 	switch (request.mode) {
-		case 'convert':
+		case 'setManualTZ':
 			manualTZ = request.selectedTZ;
-			lookForTimes(document.body);
+			lookForTimes();
 			break;
+
+		case 'getManualTZ':
+			sendResponse(manualTZ);
+			break;
+
+		case 'clearManualTZ':
+			manualTZ = undefined;
+			break;
+
 		case 'sandbox':
 			const correctedOffset = userSettings.defaults.hasOwnProperty(request.timezone) ? userSettings.defaults[request.timezone] : undefined;
 			let timeInfo = spotTime(request.text, correctedOffset);
 
 			sendResponse(timeInfo);
 			break;
+
 		case 'settings':
 			//Reloads the users settings, to reflect any changes made.
 			chrome.storage.local.get(defaultSettings, data => {
@@ -339,6 +354,17 @@ function contentMessageListener(request, sender, sendResponse) {
 				buildTimeRegex();
 				workOutShortHandOffsets();
 			});
+			break;
+
+		case 'enabled':
+			userSettings.enabled = Boolean(request.enabled);
+
+			if (userSettings.enabled) {
+				observer.observe(document.body, {attributes: false, childList: true, subtree: true});
+				lookForTimes();
+			} else {
+				observer.disconnect();
+			}
 			break;
 	}
 }

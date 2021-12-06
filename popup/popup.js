@@ -1,16 +1,18 @@
 "use strict";
-let builtTZList = false;
-let builtSandboxTZList = false;
-
 let builtOptionsPage = false;
 
 let currentPage;
 let previousPage;
-let webpageCont;
-let sandboxCont;
+
+let functionsCont;
 let optionsCont;
+
 let normalCont;
 let pageTransition = false;
+
+let functionsPage
+let webpageCont;
+let sandboxCont;
 
 let optionsAbbrPage;
 let sharedAbbrPage;
@@ -35,6 +37,9 @@ if (!('chrome' in window)) {
 				get: ()=>{init()},
 				set: ()=>{}
 			}
+		},
+		browserAction: {
+			setIcon: ()=>{}
 		}
 	}
 }
@@ -45,7 +50,8 @@ const defaultSettings = {
 	timeFormat: 0,
 	includeClock: true,
 	blankSeparator: true,
-	avoidMatchingFloatsManually: true
+	avoidMatchingFloatsManually: true,
+	enabled: true
 }
 
 const optionsMap = {
@@ -83,21 +89,47 @@ window.addEventListener("blur", () => {
 	);
 });
 
+let manualTZ = null;
+chrome.tabs.query(
+	{ active: true, currentWindow: true },
+	(tabs) => {
+		chrome.tabs.sendMessage(
+			tabs[0].id,
+			{ mode: "getManualTZ" },
+			(result) => {
+				manualTZ = result;
+				if (manualTZ !== null) {
+					document.getElementById("currentManualTZCont").setAttribute("data-withTime", "")
+					if (currentPage === functionsCont) {
+						document.getElementById("currentManualTZ").textContent = chrome.i18n.getMessage("popupCurrentlyUsedManualConversionTime", manualTZ);
+						normalCont.style.height = functionsCont.scrollHeight + "px";
+					}
+				}
+				console.log("getManualTZ", manualTZ);
+			}
+		);
+	}
+);
+
 function init() {
+
+	setEnableUI(userSettings.enabled);
 
 	//Localise strings
 	// [ElementID, StringName]
 	[
 		["extensionNameText", "extensionName"],
 
+		["webpageTabText", "popupWebpageTabText"],
+		["sandboxTabText", "popupSandboxTabText"],
+
 		["manualText", "popupManualConvert"],
 		["manualUsageHint", "popupManualConvertSourceText"],
+		["currentManualTZ", "popupCurrentlyUsedManualConversionTime"],
+		["stopManualTZ", "stop"],
 
 		["sandboxText", "popupSandboxText"],
-		["sandboxPageStr", "popupSandboxMode"],
 		["sandboxConvertTimesTo", "popupSandboxConvertTimesTo"],
-
-		["optionsText", "popupOptions"],
 
 		["visualsTabText", "popupVisuals"],
 		["detectionTabText", "popupDetection"],
@@ -125,21 +157,25 @@ function init() {
 		document.getElementById(i[0]).textContent = chrome.i18n.getMessage(i[1]);
 	})
 	document.getElementById("sandboxTextarea").placeHolder = chrome.i18n.getMessage("popupSandboxTextarea");
+	document.getElementById("optionsPage").title = chrome.i18n.getMessage("popupOptions");
 	document.querySelectorAll(".okText").forEach(ele => ele.textContent = chrome.i18n.getMessage("OK"));
 
+	document.getElementById("webpageTabButton").addEventListener("click", changeTab);
+	document.getElementById("sandboxTabButton").addEventListener("click", changeTab);
 
 	document.getElementById("useSelectedTimezone").addEventListener("click", useSelectedTimezone);
-	//Defer populating the tzList until we interact with it.
-	document.getElementById("tzList").addEventListener("focus", buildTZList, { once: true });
-	document.getElementById("tzList").addEventListener("mouseover", buildTZList, { once: true });
+	document.getElementById("stopManualTZ").addEventListener("click", clearSelectedTimezone);
 
-	document.getElementById("sandboxPage").addEventListener("click", toggleSandboxPageMode);
 	document.getElementById("sandboxConvertBtn").addEventListener("click", sandboxConvertText);
 
+	document.getElementById("pauseExtension").addEventListener("click", enableExtension);
+
 	document.getElementById("optionsPage").addEventListener("click", toggleOptionsPageMode);
-	document.getElementById("visualsTabButton").addEventListener("click", changeOptionsTab);
-	document.getElementById("detectionTabButton").addEventListener("click", changeOptionsTab);
-	document.getElementById("sharedAbbrTabButton").addEventListener("click", changeOptionsTab);
+
+	document.getElementById("visualsTabButton").addEventListener("click", changeTab);
+	document.getElementById("detectionTabButton").addEventListener("click", changeTab);
+	document.getElementById("sharedAbbrTabButton").addEventListener("click", changeTab);
+
 	document.getElementsByName("timeFormat").forEach(tF => tF.addEventListener("change", updateTimeFormatSetting));
 	document.getElementsByName("showClock")[0].addEventListener("change", updateSetting);
 	document.getElementsByName("blankSeparator")[0].addEventListener("change", updateSetting);
@@ -147,18 +183,22 @@ function init() {
 	document.getElementById("abbrPage").addEventListener("click", toggleAbbrPage);
 
 	normalCont = document.getElementById("normalContent");
+	functionsCont = document.getElementById("functionsMode");
 	webpageCont = document.getElementById("webpageMode");
 	sandboxCont = document.getElementById("sandboxMode");
 	optionsCont = document.getElementById("optionsMode");
-	currentPage = webpageCont;
-	previousPage = sandboxCont;
+	currentPage = functionsCont;
+	previousPage = optionsCont;
 
 	sharedAbbrPage = document.getElementById("sharedAbbrPage");
 	ignoredAbbrPage = document.getElementById("ignoredAbbrPage");
 	optionsAbbrPage = sharedAbbrPage;
+	
+	buildTZList();
+	buildSandboxTZList();
 
-	normalCont.style.height = webpageCont.scrollHeight + "px";
-	normalCont.style.width = webpageCont.scrollWidth + "px";
+	normalCont.style.height = functionsCont.scrollHeight + "px";
+	normalCont.style.width = functionsCont.scrollWidth + "px";
 }
 
 function updateSetting() {
@@ -186,16 +226,12 @@ function saveSettings(rebuildTZList = false) {
 	chrome.storage.local.set(userSettings);
 
 	if (rebuildTZList) {
-		builtSandboxTZList = false;
-		builtTZList = false;
 		buildTZList();
 		buildSandboxTZList();
 	}
 }
 
 function buildTZList() {
-	if (builtTZList) { return; }
-
 	//Work out the DST dates for the USA as part
 	// of special casing for DST agnostic PT/ET
 	//So first we need to get those dates (We could hard code them)
@@ -236,19 +272,18 @@ function buildTZList() {
 	});
 
 	tzListSelect.replaceChildren(optionsFrag);
-
-	builtTZList = true;
 }
 function buildSandboxTZList() {
-	if (builtSandboxTZList) { return; }
 	let tzListSelect = document.getElementById("tzList").cloneNode(true);
+
 	let localOption = document.createElement("option");
 	localOption.value = "local";
 	localOption.textContent = chrome.i18n.getMessage("popupLocalTime");
 	tzListSelect.prepend(localOption);
+
 	document.getElementById("tzListSandbox").replaceChildren(...tzListSelect.children);
+
 	document.getElementById("tzListSandbox").selectedIndex = 0;
-	builtSandboxTZList = true;
 }
 
 function tzOffsetToString(tzMins) {
@@ -268,18 +303,77 @@ function tzOffsetToString(tzMins) {
 function useSelectedTimezone() {
 	let tzList = document.getElementById("tzList");
 	let selectedTZ = tzList.options[tzList.selectedIndex].value;
+
 	if (defaultTZ[selectedTZ] !== 'undefined') {
 		chrome.tabs.query(
 			{ active: true, currentWindow: true },
 			(tabs) => {
 				chrome.tabs.sendMessage(
 					tabs[0].id,
-					{ mode: "convert", selectedTZ: selectedTZ }
+					{ mode: "setManualTZ", selectedTZ: selectedTZ }
 				);
 			}
 		);
 	}
 	window.close();
+}
+
+function clearSelectedTimezone() {
+	const clearManualUI = document.getElementById("currentManualTZCont")
+	if (clearManualUI.hasAttribute("data-withTime")) {
+		clearManualUI.removeAttribute("data-withTime")
+		normalCont.style.height = functionsCont.scrollHeight + "px";
+	}
+
+	manualTZ = null;
+
+	chrome.tabs.query(
+		{ active: true, currentWindow: true },
+		(tabs) => {
+			chrome.tabs.sendMessage(
+				tabs[0].id,
+				{ mode: "clearManualTZ" }
+			);
+		}
+	);
+	//window.close();
+}
+
+function enableExtension() {
+	const enabled = !userSettings.enabled
+
+	userSettings.enabled = enabled
+	saveSettings()
+
+	chrome.tabs.query({},
+		(tabs) => tabs.forEach(
+			tab => chrome.tabs.sendMessage(tab.id, { mode: "enabled", enabled: enabled })
+		)
+	)
+
+	setEnableUI(enabled)
+}
+function setEnableUI(enabled) {
+	const pathWord = enabled ? "icon" : "disabled"
+
+	chrome.browserAction.setIcon({
+		path: {
+			16: `../icons/${pathWord}_16.png`,
+			32: `../icons/${pathWord}_32.png`,
+			64: `../icons/${pathWord}_64.png`,
+		}
+	})
+
+	const headerEle = document.getElementById("extensionNameText").parentNode
+	if (!enabled) {
+		headerEle.setAttribute("data-paused", "")
+		document.getElementById("animateToPlay").beginElement();
+	} else {
+		if (headerEle.hasAttribute("data-paused")) {
+			headerEle.removeAttribute("data-paused")
+		}
+		document.getElementById("animateToPause").beginElement();
+	}
 }
 
 function changePage(buttonEle, newPage) {
@@ -305,24 +399,6 @@ function changePage(buttonEle, newPage) {
 	pageTransition = true;
 }
 
-function toggleSandboxPageMode() {
-	if (pageTransition) { return }
-	// Figure out which page we're toggling to
-	// If we're on the options page then base our decision on what the previousPage is
-	const newPage = (currentPage === optionsCont ? previousPage : currentPage) === webpageCont ? sandboxCont : webpageCont;
-	changePage(this, newPage);
-
-	if (!builtSandboxTZList) {
-		buildTZList();
-		buildSandboxTZList();
-	}
-
-	const sandboxPageStr = document.getElementById("sandboxPageStr");
-	const newTextString = currentPage === webpageCont ? "popupSandboxMode" : "popupWebpageMode";
-	sandboxPageStr.setAttribute("data-newText", chrome.i18n.getMessage(newTextString));
-	sandboxPageStr.addEventListener("animationend", updateButtonText);
-	sandboxPageStr.classList.add("updateText");
-}
 function pageChangeCallback() {
 	//const previousPage = currentPage === webpageCont ? sandboxCont : webpageCont;
 	previousPage.classList.remove("goingAway");
@@ -332,7 +408,7 @@ function pageChangeCallback() {
 		document.getElementById("optionsPage").removeAttribute("disabled");
 	}
 
-	pageTransition = false
+	pageTransition = false;
 
 	//document.getElementById("sandboxPage").removeAttribute("disabled");
 }
@@ -402,7 +478,7 @@ function sandboxProcessConvertResponse(timeInfo) {
 
 function toggleOptionsPageMode() {
 	if (pageTransition) { return }
-	const newPage = currentPage === optionsCont ? previousPage : optionsCont;
+	const newPage = currentPage === optionsCont ? functionsCont : optionsCont;
 	changePage(this, newPage);
 
 	if (!builtOptionsPage) {
@@ -513,7 +589,7 @@ function buildIgnoredAbbrList() {
 	document.getElementById("userIgnoredList").replaceChildren(frag)
 }
 
-function changeOptionsTab() {
+function changeTab() {
 	if (this.classList.contains("currentTab")) {
 		//Nothing to do
 		return;
@@ -538,14 +614,14 @@ function changeOptionsTab() {
 		}
 	})
 
-	normalCont.style.height = optionsCont.scrollHeight + "px";
-	normalCont.style.width = optionsCont.scrollWidth + "px";
+	normalCont.style.height = currentPage.scrollHeight + "px";
+	normalCont.style.width = currentPage.scrollWidth + "px";
 }
 function tabChangeCallback() {
 	this.classList.remove('goingAway');
 
-	normalCont.style.height = optionsCont.scrollHeight + "px";
-	normalCont.style.width = optionsCont.scrollWidth + "px";
+	normalCont.style.height = currentPage.scrollHeight + "px";
+	normalCont.style.width = currentPage.scrollWidth + "px";
 }
 
 function toggleAbbrPage() {

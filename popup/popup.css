@@ -57,7 +57,11 @@ h3 {
 	justify-content: space-between;
 }
 
-#normalContent, #optionsTabs {
+h3[data-paused] {
+	background-image: linear-gradient(35deg, #525252 47.5%, #cbcbcb calc(47.5% + 1px));
+}
+
+#normalContent, .tabsCont {
 	display: flex;
 	flex-direction: column;
 	/*transition: height .25s ease-in-out, width .25s ease-in-out;*/
@@ -72,7 +76,7 @@ h3 {
 	visibility: hidden;
 }
 .page.visible {
-	flex: 1 1 auto;
+	flex: 0 1 auto;
 	visibility: visible;
 }
 .page.goingAway {
@@ -113,10 +117,19 @@ h5 {
 	font-weight: 600;
 }
 
-#selectOKCont {
+#selectOKCont, #currentManualTZCont {
 	display: flex;
 	flex-direction: row;
 	margin-top: 10px;
+}
+
+#currentManualTZCont {
+	display: none;
+	justify-content: space-between;
+    align-items: center;
+}
+#currentManualTZCont[data-withTime] {
+	display: flex;
 }
 
 select {
@@ -222,6 +235,7 @@ h3 > div {
 	display: flex;
 	align-items: center;
 	gap: 8px;
+	margin-right: 5px;
 }
 #sandboxPage {
 	min-width: 115px;
@@ -229,16 +243,29 @@ h3 > div {
 #abbrPage {
 	min-width: 125px;
 }
-#optionsPage {
-	background-color: transparent;
+
+.buttonSVG {
 	padding: 0;
-	border-radius: 50%;
 	transition: transform .125s;
 }
-#optionsPage:hover, #optionsPage:focus {
+.buttonSVG, .buttonSVG:hover, .buttonSVG:focus, .buttonSVG:active {
+	background-color: transparent;
+}
+#pauseExtension {
+	margin-right: 14px;
+}
+#pauseExtension svg {
+	width: auto;
+	height: 25px;
+}
+
+/*#optionsPage {
+	border-radius: 50%;
+}*/
+.buttonSVG:hover, .buttonSVG:focus {
 	transform: scale(1.1);
 }
-#optionsPage:active {
+.buttonSVG:active {
 	transform: scale(.9);
 	/*makwe it an animation that plays (set by a c;lass) on click*/
 }
@@ -249,7 +276,7 @@ h3 > div {
 	width: auto;
 	height: 25px;
 }
-#optionsPage path {
+.buttonSVG path {
 	fill: rgb(var(--bg-col-rgb));
 }
 #optionsPage:hover svg, #optionsPage:focus svg {
