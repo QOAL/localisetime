@@ -13,6 +13,7 @@ zip.addLocalFolder("popup", "popup")
 zip.addLocalFile("localisetimes.js")
 zip.addLocalFile("manifest.json")
 zip.addLocalFile("static.css")
+zip.addLocalFile("background.js")
 
 zip.writeZip(`build/localisetimes_${manifestJson.version.replace(/\./g,"-")}.zip`)
 
