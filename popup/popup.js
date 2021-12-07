@@ -18,6 +18,8 @@ let optionsAbbrPage;
 let sharedAbbrPage;
 let ignoredAbbrPage;
 
+let manualTZ;
+
 //Stub the chrome object so you can load the webpage as a standalone for dev work
 if (!('chrome' in window)) {
 	window.chrome = {
@@ -88,27 +90,6 @@ window.addEventListener("blur", () => {
 		}
 	);
 });
-
-let manualTZ = undefined;
-chrome.tabs.query(
-	{ active: true, currentWindow: true },
-	(tabs) => {
-		chrome.tabs.sendMessage(
-			tabs[0].id,
-			{ mode: "getManualTZ" },
-			(result) => {
-				manualTZ = result;
-				if (typeof manualTZ === "string") {
-					document.getElementById("currentManualTZCont").setAttribute("data-withTime", "")
-					if (currentPage === functionsCont) {
-						document.getElementById("currentManualTZ").textContent = chrome.i18n.getMessage("popupCurrentlyUsedManualConversionTime", manualTZ);
-						normalCont.style.height = functionsCont.scrollHeight + "px";
-					}
-				}
-			}
-		);
-	}
-);
 
 function init() {
 
@@ -373,6 +354,9 @@ function setEnableUI(enabled) {
 		}
 		document.getElementById("animateToPause").beginElement();
 	}
+
+	const titleStringName = enabled ? "popupDisableExtension" : "popupEnableExtension";
+	document.getElementById("pauseExtension").title = chrome.i18n.getMessage(titleStringName);
 }
 
 function changePage(buttonEle, newPage) {
@@ -701,16 +685,37 @@ function popupMessageListener(request, sender, sendResponse) {
 }
 chrome.runtime.onMessage.addListener(popupMessageListener);*/
 
+function getManualTZ(tab) {
+	chrome.tabs.sendMessage(
+		tab.id,
+		{ mode: "getManualTZ" },
+		(result) => {
+			manualTZ = result;
+			if (typeof manualTZ === "string") {
+				document.getElementById("currentManualTZCont").setAttribute("data-withTime", "");
+				document.getElementById("currentManualTZ").textContent = chrome.i18n.getMessage("popupCurrentlyUsedManualConversionTime", manualTZ);
+				if (currentPage === functionsCont && webpageCont.classList.contains("visible")) {
+					normalCont.style.height = functionsCont.scrollHeight + "px";
+				}
+			}
+		}
+	);
+}
+
 chrome.tabs.query(
 	{ active: true, currentWindow: true },
 	(tabs) => {
 		chrome.tabs.executeScript(
 			tabs[0].id,
 			{ code: '1+1;' },
-			(result) => { if (chrome.runtime.lastError || !result || (Array.isArray(result) && result[0] === undefined)) {
-				document.getElementById("blockedHereContent").textContent = chrome.i18n.getMessage("popupUnableToFunction");
-				document.body.setAttribute("class", "blockedHere");
-			} }
+			(result) => {
+				if (chrome.runtime.lastError || !result || (Array.isArray(result) && result[0] === undefined)) {
+					document.getElementById("blockedHereContent").textContent = chrome.i18n.getMessage("popupUnableToFunction");
+					document.body.setAttribute("class", "blockedHere");
+				} else {
+					getManualTZ(tabs[0])
+				}
+			}
 		);
 	}
 );

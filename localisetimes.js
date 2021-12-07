@@ -107,8 +107,8 @@ function lookForTimes(node = document.body) {
 		}
 		if (skipThis) { continue; }
 
-		//If we're manually converting times then avoid any existing times that have been converted
-		if (manualTZ && node.parentElement.parentElement?.hasAttribute("data-localised")) { continue; }
+		//Avoid any existing times that have already been converted
+		if (node.parentElement.parentElement?.hasAttribute("data-localised")) { continue; }
 
 		//Ignore any text nodes that are purely white space
 		if (node.nodeValue.trim().length === 0) { continue; }
