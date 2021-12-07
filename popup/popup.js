@@ -89,7 +89,7 @@ window.addEventListener("blur", () => {
 	);
 });
 
-let manualTZ = null;
+let manualTZ = undefined;
 chrome.tabs.query(
 	{ active: true, currentWindow: true },
 	(tabs) => {
@@ -98,14 +98,13 @@ chrome.tabs.query(
 			{ mode: "getManualTZ" },
 			(result) => {
 				manualTZ = result;
-				if (manualTZ !== null) {
+				if (typeof manualTZ === "string") {
 					document.getElementById("currentManualTZCont").setAttribute("data-withTime", "")
 					if (currentPage === functionsCont) {
 						document.getElementById("currentManualTZ").textContent = chrome.i18n.getMessage("popupCurrentlyUsedManualConversionTime", manualTZ);
 						normalCont.style.height = functionsCont.scrollHeight + "px";
 					}
 				}
-				console.log("getManualTZ", manualTZ);
 			}
 		);
 	}
@@ -325,7 +324,7 @@ function clearSelectedTimezone() {
 		normalCont.style.height = functionsCont.scrollHeight + "px";
 	}
 
-	manualTZ = null;
+	manualTZ = undefined;
 
 	chrome.tabs.query(
 		{ active: true, currentWindow: true },
