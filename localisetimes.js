@@ -57,7 +57,7 @@ const defaultSettings = {
 	includeClock: true,
 	blankSeparator: true,
 	avoidMatchingFloatsManually: true,
-	emabled: true
+	enabled: true
 }
 
 let userSettings = { ...defaultSettings }
