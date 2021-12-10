@@ -183,7 +183,7 @@ function lookForTimes(node = document.body) {
 
 function handleTextNode(node, timeInfo) {
 
-	if (node.nodeType === 3) { node === node.parentNode; }
+	if (node.nodeType === 3) { node = node.parentNode; }
 
 	//We use detection of a clock to help prevent these times from being localised more than once
 	// So currently we are not obeying userSettings.includeClock
