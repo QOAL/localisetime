@@ -282,7 +282,9 @@ function init() {
 	workOutShortHandOffsets();
 
 	//Give the page a once over now it has loaded
-	lookForTimes();
+	if (userSettings.enabled) {
+		lookForTimes();
+	}
 
 	//We need to watch for modifications to the document.body, so we can check for new text nodes to look at
 	observer = new MutationObserver(handleMutations);
