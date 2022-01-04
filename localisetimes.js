@@ -37,7 +37,7 @@ const _G = {
 
 const whiteSpaceRegEx = /\s/g;
 
-const preceedingRegEx = /\S/;// /[:.,'%\d]/;
+const preceedingRegEx = /[-:.,'%\d]/;
 
 const svgText = ["text", "tspan"];
 

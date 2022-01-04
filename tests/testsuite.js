@@ -72,6 +72,7 @@ const tests = {
 		["Static fire test complete – targeting Tuesday, November 23 at 10:21 p.m. PT for Falcon 9’s launch of @NASA’s Double Asteroid Redirection Test", ["06:21"]],
 		["9am et 9am 9am pt", ["14:00", "17:00"]],
 		//["7pm - 21:00 UTC", [""]], //This is just a strangely formatted time range, I don't know what to do with it. (It's currently valid)
+		["(16:30 UTC)", ["17:30"]],
 	],
 	"Etc/GMT+7": [
 		["5:30:15-7pm GMT", ["10:30:15 – 12:00"]],
