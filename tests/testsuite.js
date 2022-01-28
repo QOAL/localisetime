@@ -73,6 +73,9 @@ const tests = {
 		["9am et 9am 9am pt", ["14:00", "17:00"]],
 		//["7pm - 21:00 UTC", [""]], //This is just a strangely formatted time range, I don't know what to do with it. (It's currently valid)
 		["(16:30 UTC)", ["17:30"]],
+		["18 cost card", [undefined]],
+		["2020 art", [undefined]],
+		["30:15 gmt", [undefined]],
 	],
 	"Etc/GMT+7": [
 		["5:30:15-7pm GMT", ["10:30:15 – 12:00"]],

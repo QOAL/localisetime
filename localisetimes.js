@@ -48,7 +48,7 @@ let clockEle;
 const dateObj = new Date();
 
 //Check the users (first 3) accepted languages, if one is German, then enforce IST being in upper case only as a time zone abbreviation.
-const needsUppercaseIST = typeof window === "undefined" ? false : navigator.languages.findIndex((l,i) => i < 3 && l.split("-")[0] === "de") !== -1
+//const needsUppercaseIST = typeof window === "undefined" ? false : navigator.languages.findIndex((l,i) => i < 3 && l.split("-")[0] === "de") !== -1
 
 const defaultSettings = {
 	defaults: { ...defaultTZ },
@@ -452,44 +452,7 @@ function spotTime(str, correctedOffset) {
 		}
 
 		if (fullNameOffset === false) {
-			//Check that we have a match, with a valid timezone.
-			if (!match[_G.tzAbr] || typeof userSettings.defaults[upperTZ] === "undefined") { continue; }
-			//Demand the timezone abbreviation be all the same case
-			if (!(match[_G.tzAbr] === upperTZ || match[_G.tzAbr] === match[_G.tzAbr].toLowerCase())) { continue; }
-			//Make sure the user isn't ignoring this abbreviation
-			if (userSettings.ignored.indexOf(match[_G.tzAbr].toUpperCase()) !== -1) { continue; }
-
-			//blank separator: Require : or . when minutes are given
-			if (!match[_G.separator] && match[_G.mins] && !userSettings.blankSeparator) { continue; }
-
-			//avoidMatchingFloatsManually: If we're manually converting times, ignore full stops used as time separators, with no meridiems (Can help avoid matching with numbers)
-			if (match[_G.separator] === "." && match[_G.mins] && !match[_G.meridiem] && userSettings.avoidMatchingFloatsManually) { continue; }
-
-			//We need to change the start of the regex to... maybe (^|\s)
-			//The issue here is that : matches the word boundary, and if the input is "30:15 gmt" then it'll match "15 gmt"
-
-			//if (str[match.index - 1] === ":" || str[match.index - 1] === ".") { continue; }
-			//if (str.substr(match.index - 1, 1) === ":" || str.substr(match.index - 1, 1) === ".") { continue; }
-			if (match.index > 0) {
-				const prevChar = str.substr(match.index - 1, 1);
-				if (preceedingRegEx.test(prevChar)) { continue; }
-			}
-
-			if (match[_G.tzAbr] === 'pt' && !(match[_G.meridiem] || match[_G.mins])) { continue; } //Temporary quirk to avoid matching font sizes
-
-			if (match[_G.tzAbr] === 'ist' && !(match[_G.separator] || (match[_G.meridiem] && match[_G.meridiem] !== 'p'))) { continue; } //IST must be capitalised, if there's no separator
-			//Only people with German in their first 3 accepted languages will use this path, it's to avoid issues with the word "ist"
-			if (needsUppercaseIST && match[_G.tzAbr] === 'ist' && (!match[_G.meridiem] || match[_G.meridiem].length !== 2)) { continue; }
-
-			//Avoid cat and eat false positives
-			const requiresMeridiemOrMinsWithLowercase = ['cat', 'eat'];
-			if (requiresMeridiemOrMinsWithLowercase.includes(match[_G.tzAbr]) && !(match[_G.meridiem] || match[_G.mins])) { continue; } 
-			//if ((match[_G.tzAbr] !== 'CAT' || match[_G.tzAbr] !== 'EAT') && !(match[_G.meridiem] || match[_G.mins])) { continue; }
-
-			const requiresSeparatorOrMeridiem = ['bit', 'mit'];
-			if (requiresSeparatorOrMeridiem.includes(match[_G.tzAbr]) && !(match[_G.separator] || match[_G.meridiem])) { continue; }
-			//Manually converted times will easily match numbers without this
-			if (usingManualTZ && !(match[_G.separator] || match[_G.meridiem])) { continue; }
+			if (!validateTime(match, str, upperTZ, usingManualTZ)) { continue; }
 		}
 
 		let tHour = parseInt(match[_G.hours]);
@@ -640,6 +603,53 @@ function formatLocalisedTime(tmpDate, withSeconds) {
 	}
 	// Match the granularity of the output to the input
 	return dateTimeFormats[withSeconds ? 1 : 0].format(tmpDate)	
+}
+
+function validateTime(match, str, upperTZ, usingManualTZ) {
+	//Check that we have a match, with a valid timezone.
+	if (!match[_G.tzAbr] || typeof userSettings.defaults[upperTZ] === "undefined") { return false; }
+
+	//Demand the timezone abbreviation be all the same case
+	if (!(match[_G.tzAbr] === upperTZ || match[_G.tzAbr] === match[_G.tzAbr].toLowerCase())) { return false; }
+
+	//Make sure the user isn't ignoring this abbreviation
+	if (userSettings.ignored.indexOf(match[_G.tzAbr].toUpperCase()) !== -1) { return false; }
+
+	//blank separator: Require : or . when minutes are given
+	if (!match[_G.separator] && match[_G.mins] && !userSettings.blankSeparator) { return false; }
+
+	//avoidMatchingFloatsManually: If we're manually converting times, ignore full stops used as time separators, with no meridiems (Can help avoid matching with numbers)
+	if (match[_G.separator] === "." && match[_G.mins] && !match[_G.meridiem] && userSettings.avoidMatchingFloatsManually) { return false; }
+
+	//We need to change the start of the regex to... maybe (^|\s)
+	//The issue here is that : matches the word boundary, and if the input is "30:15 gmt" then it'll match "15 gmt"
+	if (match.index > 0) {
+		// Avoid localising this time if the preceding character doesn't look or feel right
+		const prevChar = str.substr(match.index - 1, 1);
+		if (preceedingRegEx.test(prevChar)) { return false; }
+	}
+
+	//Avoid matching font sizes
+	if (match[_G.tzAbr] === 'pt' && !(match[_G.meridiem] || match[_G.mins])) { return false; }
+
+	//Avoid matching progressive resolutions
+	// Taking care to allow germans to shout, as long as the p is lowercase
+	if (match[_G.mins] && !match[_G.separator] && match[_G.meridiem] === 'p' && match[_G.tzAbr] !== 'IST') { return false; }
+
+	//Avoid cat and eat false positives
+	// Require either the meridiem or minutes & separator
+	const requiresMeridiemOrMinsWithLowercase = [
+		'bit', 'cat', 'eat', 'cost', 'art',
+		'ist', 'kalt', 'gilt', 'mit', 'mut', 'met'
+	];
+	if (requiresMeridiemOrMinsWithLowercase.includes(match[_G.tzAbr]) &&
+		!(match[_G.meridiem] || (match[_G.mins] && match[_G.separator]))
+	) { return false; }
+
+	//Manually converted times will easily match numbers without this
+	if (usingManualTZ && !(match[_G.separator] || match[_G.meridiem])) { return false; }
+
+	return true;
 }
 
 function buildClockElement() {
