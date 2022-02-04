@@ -6,7 +6,7 @@ let dateTimeFormats = Array(2);
 
 const shortHandInfo = {"PT": "Pacific Time", "ET": "Eastern Time", "CT": "Central Time", "MT": "Mountain Time"};
 
-const fullTitleRegEx = "[a-z \-'áéí–]{3,45}?(?= time) time";
+const fullTitleRegEx = "[a-z \-'áéí–-]{3,45}?(?= time) time";
 
 let timeRegex;
 
@@ -46,6 +46,13 @@ let haveInsertedStaticCSS = false;
 let clockEle;
 
 const dateObj = new Date();
+
+const abbrsThatLookLikeWords = [
+	'art', 'bit', 'bot', 'cat', 'cost', 'cot',
+	'east', 'eat', 'ect', 'get', 'git', 'mart',
+	'met', 'nut', 'pet', 'tot', 'volt', 'west', 'wet',
+	'ist', 'kalt', 'gilt', 'mit', 'mut'
+];
 
 //Check the users (first 3) accepted languages, if one is German, then enforce IST being in upper case only as a time zone abbreviation.
 //const needsUppercaseIST = typeof window === "undefined" ? false : navigator.languages.findIndex((l,i) => i < 3 && l.split("-")[0] === "de") !== -1
@@ -618,9 +625,6 @@ function validateTime(match, str, upperTZ, usingManualTZ) {
 	//blank separator: Require : or . when minutes are given
 	if (!match[_G.separator] && match[_G.mins] && !userSettings.blankSeparator) { return false; }
 
-	//avoidMatchingFloatsManually: If we're manually converting times, ignore full stops used as time separators, with no meridiems (Can help avoid matching with numbers)
-	if (match[_G.separator] === "." && match[_G.mins] && !match[_G.meridiem] && userSettings.avoidMatchingFloatsManually) { return false; }
-
 	//We need to change the start of the regex to... maybe (^|\s)
 	//The issue here is that : matches the word boundary, and if the input is "30:15 gmt" then it'll match "15 gmt"
 	if (match.index > 0) {
@@ -636,18 +640,27 @@ function validateTime(match, str, upperTZ, usingManualTZ) {
 	// Taking care to allow germans to shout, as long as the p is lowercase
 	if (match[_G.mins] && !match[_G.separator] && match[_G.meridiem] === 'p' && match[_G.tzAbr] !== 'IST') { return false; }
 
-	//Avoid cat and eat false positives
-	// Require either the meridiem or minutes & separator
-	const requiresMeridiemOrMinsWithLowercase = [
-		'bit', 'cat', 'eat', 'cost', 'art',
-		'ist', 'kalt', 'gilt', 'mit', 'mut', 'met'
-	];
-	if (requiresMeridiemOrMinsWithLowercase.includes(match[_G.tzAbr]) &&
-		!(match[_G.meridiem] || (match[_G.mins] && match[_G.separator]))
-	) { return false; }
+	if (abbrsThatLookLikeWords.includes(match[_G.tzAbr])) {
+		//Avoid cat and eat false positives
+		// Require either the meridiem or minutes & separator
+		if (!(match[_G.meridiem] || (match[_G.mins] && match[_G.separator]))) {
+			return false;
+		}
+		//Avoid falsely matching "3 a bit"
+		// Require either the meridiem or minutes & separator
+		if (match[_G.meridiem] === 'a' && !(match[_G.mins] && match[_G.separator])) {
+			return false;
+		}
+	}
 
-	//Manually converted times will easily match numbers without this
-	if (usingManualTZ && !(match[_G.separator] || match[_G.meridiem])) { return false; }
+	if (usingManualTZ) {
+		//Manually converted times will easily match numbers without this
+		if (!(match[_G.separator] || match[_G.meridiem])) { return false; }
+
+		//avoidMatchingFloatsManually: If we're manually converting times,
+		// ignore full stops used as time separators, with no meridiems (Can help avoid matching with numbers)
+		if (match[_G.separator] === "." && match[_G.mins] && !match[_G.meridiem] && userSettings.avoidMatchingFloatsManually) { return false; }
+	}
 
 	return true;
 }

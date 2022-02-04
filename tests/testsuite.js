@@ -76,6 +76,8 @@ const tests = {
 		["18 cost card", [undefined]],
 		["2020 art", [undefined]],
 		["30:15 gmt", [undefined]],
+		["3 a bit", [undefined]],
+		["3 a BIT", ["16:00"]],
 	],
 	"Etc/GMT+7": [
 		["5:30:15-7pm GMT", ["10:30:15 – 12:00"]],
