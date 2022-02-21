@@ -257,36 +257,38 @@ function toggleTime(e) {
 function workOutShortHandOffsets() {
 	//Work out the DST dates for the USA as part
 	// of special casing for DST agnostic PT/ET
-	//So first we need to get those dates
-	//We're switching all of these times between at once, rather than staggering them correctly
-	const thisYear = new Date().getUTCFullYear();
+	//So first we need to get those dates (We could hard code them)
+	const thisYear = new Date().getUTCFullYear()
 
-	//Begin DST
-	//2nd Sunday in March (2am local, 7am UTC)
-	let tmpDate = new Date(Date.UTC(thisYear, 2, 0, 7));
-	tmpDate.setUTCMonth(2, (7 - tmpDate.getUTCDay()) + 7);
-	const toDST = tmpDate.getTime();
+	const tmpNow = Date.now()
 
-	//End of DST
-	//1st Sunday in November (2am local, 7am UTC)
-	tmpDate = new Date(Date.UTC(thisYear, 10, 0, 7));
-	tmpDate.setUTCMonth(10, 7 - tmpDate.getUTCDay());
-	const fromDST = tmpDate.getTime();
+	const offsetInfo = [
+		{ hour: 0, short: "ET", standard: "EST", daylight: "EDT" },
+		{ hour: 1, short: "CT", standard: "CST", daylight: "CDT" },
+		{ hour: 2, short: "MT", standard: "MST", daylight: "MDT" },
+		{ hour: 3, short: "PT", standard: "PST", daylight: "PDT" },
+	]
 
-	const tmpNow = Date.now();
+	offsetInfo.forEach(info => {
+		//Begin DST
+		//2nd Sunday in March (2am local, 7am UTC)
+		let tmpDate = new Date(Date.UTC(thisYear, 2, 0, 7 + info.hour))
+		tmpDate.setUTCMonth(2, (7 - tmpDate.getUTCDay()) + 7)
+		const toDST = tmpDate.getTime()
 
-	const dstAmerica = tmpNow > toDST && tmpNow < fromDST;
+		//End of DST
+		//1st Sunday in November (2am local, 6am UTC)
+		tmpDate = new Date(Date.UTC(thisYear, 10, 0, 6 + info.hour))
+		tmpDate.setUTCMonth(10, 7 - tmpDate.getUTCDay())
+		const fromDST = tmpDate.getTime()
+
+		defaultTZ[info.short] = (tmpNow > toDST && tmpNow < fromDST) ? defaultTZ[info.daylight] : defaultTZ[info.standard]
 	
-	//Now we need to fill in the correct offset for PT/ET
-	userSettings.defaults.PT = dstAmerica ? defaultTZ.PDT : defaultTZ.PST;
-	userSettings.defaults.ET = dstAmerica ? defaultTZ.EDT : defaultTZ.EST;
-	userSettings.defaults.CT = dstAmerica ? defaultTZ.CDT : defaultTZ.CST;
-	userSettings.defaults.MT = dstAmerica ? defaultTZ.MDT : defaultTZ.MST;
-	//
+	})
 }
 
 function init() {
-	workOutShortHandOffsets();
+	workOutShortHandOffsets(); //This could be deferred until find any valid time
 
 	//Give the page a once over now it has loaded
 	if (userSettings.enabled) {
