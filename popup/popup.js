@@ -93,7 +93,7 @@ window.addEventListener("blur", () => {
 
 function init() {
 
-	setEnableUI(userSettings.enabled);
+	setEnableUI(userSettings.enabled, true);
 
 	//Localise strings
 	// [ElementID, StringName]
@@ -179,6 +179,9 @@ function init() {
 
 	normalCont.style.height = functionsCont.scrollHeight + "px";
 	normalCont.style.width = functionsCont.scrollWidth + "px";
+
+	document.getElementById("animateToPause").addEventListener("endEvent", animateToEnd)
+	document.getElementById("animateToPlay").addEventListener("endEvent", animateToEnd)
 }
 
 function updateSetting() {
@@ -333,7 +336,7 @@ function enableExtension() {
 
 	setEnableUI(enabled)
 }
-function setEnableUI(enabled) {
+function setEnableUI(enabled, pageLoad = false) {
 	const pathWord = enabled ? "icon" : "disabled"
 
 	chrome.browserAction.setIcon({
@@ -344,19 +347,67 @@ function setEnableUI(enabled) {
 		}
 	})
 
+	const pauseExtension = document.getElementById("pauseExtension")
+
 	const headerEle = document.getElementById("extensionNameText").parentNode
 	if (!enabled) {
 		headerEle.setAttribute("data-paused", "")
-		document.getElementById("animateToPlay").beginElement();
+		document.getElementById("animateToPlay").beginElement()
 	} else {
 		if (headerEle.hasAttribute("data-paused")) {
 			headerEle.removeAttribute("data-paused")
 		}
-		document.getElementById("animateToPause").beginElement();
+		document.getElementById("animateToPause").beginElement()
+	}
+	pauseExtension.classList.add("animating")
+	pauseExtension.setAttribute("disabled","disabled")
+
+	if (headerCols[0] === false) {
+		const rootCSS = document.styleSheets[0].cssRules[0].style
+		headerCols[0] = rootCSS.getPropertyValue('--red-rgb').split(',')
+		headerCols[1] = rootCSS.getPropertyValue('--green-rgb').split(',')
+	}
+	headerAniDir = enabled ? 1 : 0
+	if (!pageLoad) {
+		requestAnimationFrame(animateHeaderGradient)
 	}
 
-	const titleStringName = enabled ? "popupDisableExtension" : "popupEnableExtension";
-	document.getElementById("pauseExtension").title = chrome.i18n.getMessage(titleStringName);
+	const titleStringName = enabled ? "popupDisableExtension" : "popupEnableExtension"
+	pauseExtension.title = chrome.i18n.getMessage(titleStringName)
+}
+
+function animateToEnd() {
+	const pauseExtension = document.getElementById("pauseExtension")
+	pauseExtension.classList.remove("animating")
+	pauseExtension.removeAttribute("disabled")
+}
+function blendCols(col1, col2, amount) {
+	return col1.map(v => 
+		~~((v * (1 - amount)) + (col2 * amount))
+	).join(',')
+}
+
+let headerCols = [false, false]
+let startTime = 0
+let headerAniDir = 0
+const animationDuration = 250 //Matches the SVG animation duration. We could set that from JS, or get it instead.
+function animateHeaderGradient(newTime) {
+	if (startTime === 0) {
+		startTime = newTime
+	}
+	const amount = Math.abs(headerAniDir - (Math.min(animationDuration, newTime - startTime) / animationDuration))
+
+	if (headerAniDir === 0 ? amount < 1 : amount > 0) {
+		const b1 = blendCols(headerCols[0], 82, amount)
+		const b2 = blendCols(headerCols[1], 203, amount)
+		document.querySelector("body > h3").style.backgroundImage = `linear-gradient(35deg, rgb(${b1}) 47.5%, rgb(${b2}) calc(47.5% + 1px))`
+
+		requestAnimationFrame(animateHeaderGradient)
+	} else {
+		startTime = 0
+
+		document.querySelector("body > h3").style.backgroundImage = ""
+	}
 }
 
 function changePage(buttonEle, newPage) {

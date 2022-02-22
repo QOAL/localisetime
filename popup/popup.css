@@ -258,6 +258,9 @@ h3 > div {
 	width: auto;
 	height: 25px;
 }
+#pauseExtension.animating {
+	pointer-events: none;
+}
 
 /*#optionsPage {
 	border-radius: 50%;
