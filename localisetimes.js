@@ -312,8 +312,11 @@ function handleMutations(mutationsList, observer) {
 			mutation.addedNodes.forEach(node => {
 				if (node.nodeType === Node.TEXT_NODE) {
 					if (node.nodeValue.trim().length > 0 &&
-						node.parentNode && node.parentNode.tagName !== "TEXTAREA" && node.parentNode.tagName !== "SCRIPT" &&
-						!(node.parentNode.parentNode && node.parentNode.parentNode.className === "localiseTime")) {
+						node.parentNode &&
+						node.parentNode.tagName !== "TEXTAREA" &&
+						node.parentNode.tagName !== "SCRIPT" &&
+						!(node.parentNode.parentNode && node.parentNode.parentNode.className === "localiseTime")
+					) {
 						handleTextNode(node);
 					}
 				} else {
@@ -340,7 +343,9 @@ function contentMessageListener(request, sender, sendResponse) {
 	switch (request.mode) {
 		case 'setManualTZ':
 			manualTZ = request.selectedTZ;
+			observer.disconnect();
 			lookForTimes();
+			observer.observe(document.body, {attributes: false, childList: true, subtree: true});
 			break;
 
 		case 'getManualTZ':

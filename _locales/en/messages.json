@@ -43,7 +43,7 @@
 		"placeholders": {
 			"time": {
 				"content": "$1",
-				"example": "16:45 CET"
+				"example": "CET"
 			}
 		}
 	},
