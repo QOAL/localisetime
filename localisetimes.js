@@ -282,7 +282,7 @@ function workOutShortHandOffsets() {
 		tmpDate.setUTCMonth(10, 7 - tmpDate.getUTCDay())
 		const fromDST = tmpDate.getTime()
 
-		defaultTZ[info.short] = (tmpNow > toDST && tmpNow < fromDST) ? defaultTZ[info.daylight] : defaultTZ[info.standard]
+		userSettings.defaults[info.short] = (tmpNow > toDST && tmpNow < fromDST) ? userSettings.defaults[info.daylight] : userSettings.defaults[info.standard]
 	
 	})
 }
