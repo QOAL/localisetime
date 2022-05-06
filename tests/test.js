@@ -69,6 +69,7 @@ function patchWebExt(input, tzInfo) {
 	}
 	//Fake the timezone offset.
 	output = output.replace(/dateObj.getTimezoneOffset\(\);/g, "0;")
+	output = output.replace(/dateObj\.getUTCMonth\(\),/g, "1,")
 	//Force north american time aliases into summer time
 	output = output.replace("(tmpNow > toDST && tmpNow < fromDST)", "true");
 
