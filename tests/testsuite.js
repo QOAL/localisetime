@@ -65,6 +65,7 @@ const tests = {
 		["Der Schuss bei 1:14 ist sehr schoen abgestimmt. 10/10.", ["20:44"]],
 		["Starship dry mass should be ~105mt, propellant is 1,200mt, suggests ~1,300mt total mass, sans payload. Raptors produce ~ 200mt thrust, so six sea level engines should be able to lift a fully fueled Starship, assuming they red line thrust.", [undefined]],
 		["9:37pm British Summer Time", ["21:37"]],
+		["See you tomorrow at 1PM Eastern time! (1pm ET)", ["18:00", "18:00"]],
 		["November 4th at 6:00 AM Pacific Time", ["14:00"]],
 		["A m;TR2S 2Rt~n#8V, .?Si2ya YzrLAgSf/ SV[2bst+ 1:30 p.m. NDT bJfHiD -mMmP CM3", ["17:00"]], //"02:00", "17:00"
 		["Only 1 cat per person, sorry!", [undefined]],

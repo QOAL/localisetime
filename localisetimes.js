@@ -283,7 +283,7 @@ function workOutShortHandOffsets() {
 		const fromDST = tmpDate.getTime()
 
 		userSettings.defaults[info.short] = (tmpNow > toDST && tmpNow < fromDST) ? userSettings.defaults[info.daylight] : userSettings.defaults[info.standard]
-	
+
 	})
 }
 
@@ -442,26 +442,30 @@ function spotTime(str, correctedOffset) {
 			//To check if we've got a valid full name for a timezone,
 			// we need to do a little bit of work
 			const lcTZAbr = match[_G.tzAbr].toLowerCase();
-			const longNameInfo = Object.keys(tzInfo).find(tzK => {
-				return tzInfo[tzK].find(tzG => {
-					if (tzG.title.toLowerCase() === lcTZAbr) {
-						fullNameOffset = tzG.offset; 
-						return tzG;
-					}
-				})
+
+			//Check if this is a shorthand time zone first
+			const shortHandFound = Object.keys(shortHandInfo).find(shK => {
+				if (shortHandInfo[shK].toLowerCase() === lcTZAbr) {
+					match[_G.tzAbr] = shK;
+					upperTZ = shK;
+					return true;
+				}
 			})
-			if (longNameInfo && fullNameOffset !== false) {
-				match[_G.tzAbr] = longNameInfo;
-				upperTZ = match[_G.tzAbr].toUpperCase();
-			} else {
-				//We didn't find the timezone in that list, but it might be a short hand name
-				Object.keys(shortHandInfo).find(shK => {
-					if (shortHandInfo[shK].toLowerCase() === lcTZAbr) {
-						match[_G.tzAbr] = shK;
-						upperTZ = shK;
-						return true
-					}
+
+			if (!shortHandFound) {
+				const longNameInfo = Object.keys(tzInfo).find(tzK => {
+					return tzInfo[tzK].find(tzG => {
+						if (tzG.title.toLowerCase() === lcTZAbr) {
+							fullNameOffset = tzG.offset; 
+							return tzG;
+						}
+					})
 				})
+
+				if (longNameInfo && fullNameOffset !== false) {
+					match[_G.tzAbr] = longNameInfo;
+					upperTZ = match[_G.tzAbr].toUpperCase();
+				}
 			}
 		}
 
