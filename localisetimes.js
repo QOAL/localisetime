@@ -99,20 +99,8 @@ function lookForTimes(node = document.body) {
 
 	for(var i = 0; node = nodes[i]; i++) {
 
-		//We should try and avoid working inside contenteditable="true" elements, as it could cause issues for the user
-		//I'm going to assume that they don't get horribly nested, so only check up a few nodes.
-		let tmpNode = node;
-		let nodeCount = 0;
-		let skipThis = false;
-		while (tmpNode && tmpNode.parentNode && tmpNode !== document.body && nodeCount < 9) {
-			if (tmpNode.parentNode.hasAttribute("contenteditable")) {
-				skipThis = true;
-				break;
-			}
-			tmpNode = tmpNode.parentNode;
-			nodeCount++;
-		}
-		if (skipThis) { continue; }
+		// Don't interfere with contentEditable elements
+		if (node.isContentEditable || (node.parentElement && node.parentElement.isContentEditable)) { continue; }
 
 		//Avoid any existing times that have already been converted
 		if (node.parentElement.parentElement?.hasAttribute("data-localised")) { continue; }
@@ -315,6 +303,7 @@ function handleMutations(mutationsList, observer) {
 						node.parentNode &&
 						node.parentNode.tagName !== "TEXTAREA" &&
 						node.parentNode.tagName !== "SCRIPT" &&
+						!node.parentNode.isContentEditable &&
 						!(node.parentNode.parentNode && node.parentNode.parentNode.className === "localiseTime")
 					) {
 						handleTextNode(node);
