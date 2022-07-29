@@ -180,6 +180,17 @@ function handleTextNode(node, timeInfo) {
 
 	if (node.nodeType === 3) { node = node.parentNode; }
 
+	Array.from(node.childNodes).forEach(cNode => {
+		if (cNode.nodeType === 3) {
+			lookForTextTimes(cNode, timeInfo)
+		} else {
+			lookForTimes(cNode)
+		}
+	})
+}
+
+function lookForTextTimes(node, timeInfo) {
+
 	//We use detection of a clock to help prevent these times from being localised more than once
 	// So currently we are not obeying userSettings.includeClock
 	//Hours: U+1F550 - U+1F55B
