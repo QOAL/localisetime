@@ -178,30 +178,31 @@ function lookForTimes(node = document.body) {
 
 function handleTextNode(node, timeInfo) {
 
-	if (node.nodeType === 3) { node = node.parentNode; }
+	if (node.nodeType === 3) {
+		lookForTextTimes(node, timeInfo);
+	} else {
+		Array.from(node.parentNode.childNodes).forEach(cNode => {
+			if (cNode.nodeType === 3) {
+				lookForTextTimes(cNode, timeInfo);
+			}
+		})
+	}
 
-	Array.from(node.childNodes).forEach(cNode => {
-		if (cNode.nodeType === 3) {
-			lookForTextTimes(cNode, timeInfo)
-		} else {
-			lookForTimes(cNode)
-		}
-	})
 }
 
 function lookForTextTimes(node, timeInfo) {
-
-	//We use detection of a clock to help prevent these times from being localised more than once
-	// So currently we are not obeying userSettings.includeClock
-	//Hours: U+1F550 - U+1F55B
-	//Half:  U+1F55C - U+1F567
-	//Decimal range: 128336 - 128359
 
 	if (!timeInfo) {
 		timeInfo = spotTime(node.textContent);
 	}
 
 	if (timeInfo.length === 0) { return }
+
+	//We use detection of a clock to help prevent these times from being localised more than once
+	// So currently we are not obeying userSettings.includeClock
+	//Hours: U+1F550 - U+1F55B
+	//Half:  U+1F55C - U+1F567
+	//Decimal range: 128336 - 128359
 
 	const maybeClock = node.textContent.codePointAt(timeInfo[0][2] - 2);
 	if (maybeClock && maybeClock >= 128336 && maybeClock <= 128359) { return }
