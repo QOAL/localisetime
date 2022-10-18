@@ -37,7 +37,7 @@ const _G = {
 
 const whiteSpaceRegEx = /\s/g;
 
-const preceedingRegEx = /[-:.,'%\d]/;
+const preceedingRegEx = /[-:.,'%\d$£€]/;
 
 const svgText = ["text", "tspan"];
 
@@ -83,7 +83,7 @@ function buildTimeRegex() {
 	const tzaolStr = Object.keys(userSettings.defaults).join("|") + "|" + fullTitleRegEx;
 	//13% faster, but causes issues when manually converting
 	//[a-z]{2,5}|' + fullTitleRegEx + '
-	timeRegex = new RegExp('\\b(?:([01]?[0-9]|2[0-3])(:|\\.)?([0-5][0-9])?(:[0-5][0-9])?(?: ?([ap]\\.?m?\\.?))?( ?)(to|until|til|and|or|[-\u2010-\u2015])\\6)?([01]?[0-9]|2[0-3])(:|\\.)?([0-5][0-9])?(:[0-5][0-9])?(?: ?([ap]\\.?m?\\.?)(?= \\w|\\b))?(?:(?: ?(' + tzaolStr + '))(( ?)(?:\\+|-)\\15[0-9]{1,2})?)?\\b', 'giu');
+	timeRegex = new RegExp('\\b(?:([01]?[0-9]|2[0-3])(:|\\.)?([0-5][0-9])?(:[0-5][0-9])?(?: ?([ap]\\.?m?\\.?))?( ?)(to|until|til|and|or|[-\u2010-\u2015])\\6)?([01]?[0-9]|2[0-3])(:|\\.)?([0-5][0-9])?(:[0-5][0-9])?(?: ?([ap]\\.?m?\\.?)(?= \\w|\\b))?(?:(?: ?(' + tzaolStr + '))(( ?)(?:\\+|-)\\15[0-9]{1,2}(?::\\d{2})?)?)?\\b', 'giu');
 	//[-|\\u{8211}|\\u{8212}|\\u{8213}]
 }
 
@@ -153,6 +153,7 @@ function lookForTimes(node = document.body) {
 			tmpTime.appendChild(tmpTimeText); //Our converted time
 			//Let people mouse over the converted time to see what was actually written
 			tmpTime.setAttribute("title", chrome.i18n.getMessage("tooltipConverted", thisTime.fullStr + (thisTime.usingManualTZ ? ' ' + manualTZ : '')));
+			tmpTime.setAttribute("tabIndex", 0); //Allow keyboard interactions
 			tmpTime.setAttribute("data-localised", thisTime.localisedTime); //Used when toggling
 			tmpTime.setAttribute("data-original", thisTime.fullStr); //Used when toggling
 			if (thisTime.usingManualTZ) {
@@ -161,6 +162,7 @@ function lookForTimes(node = document.body) {
 			
 			tmpFrag.appendChild(tmpTime);
 			tmpTime.addEventListener("click", toggleTime);
+			tmpTime.addEventListener("keypress", toggleTimeKB);
 
 			//Do we have any more times to worry about?
 			const endPos = timeInfo[t + 1] ?
@@ -253,6 +255,12 @@ function toggleTime(e) {
 	//Stop any other events from firing (handy if this node is in a link)
 	e.preventDefault();
 }
+function toggleTimeKB(e) {
+	if (e.key === "Enter") {
+		toggleTime.call(e.target, e)
+	}
+}
+
 
 function workOutShortHandOffsets() {
 	//Work out the DST dates for the USA as part
@@ -497,7 +505,8 @@ function spotTime(str, correctedOffset) {
 		let hourOffset = 0;
 		//Sometimes people write a tz and then +X (like UTC+1)
 		if (match[_G.offset]) {
-			hourOffset = parseInt(match[_G.offset].replace(whiteSpaceRegEx, '')) * 60;
+			let timeOffset = match[_G.offset].replace(whiteSpaceRegEx, '').split(':');
+			hourOffset = parseInt(timeOffset[0]) * 60 + (timeOffset[1] ? parseInt(timeOffset[1]) : 0);
 		}
 		const mainOffset = (fullNameOffset !== false ? fullNameOffset : userSettings.defaults[upperTZ]) + hourOffset;
 		let tCorrected = tMinsFromMidnight - mainOffset;

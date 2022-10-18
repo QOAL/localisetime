@@ -18,4 +18,6 @@
 .localiseTime span {
 	line-height: 1.3;
 	display: block;
+	color: inherit;
+	background: unset;
 }
