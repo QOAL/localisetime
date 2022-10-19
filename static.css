@@ -7,6 +7,8 @@
 	box-shadow: 0 1px 0 rgba(0,0,0,.1);
 	align-items: center;
 	flex-wrap: nowrap;
+	position: relative;
+	font-weight: normal;
 }
 .localiseTime svg {
 	height: .8em;
@@ -20,4 +22,39 @@
 	display: block;
 	color: inherit;
 	background: unset;
+}
+.localiseTime.showTooltip::after {
+	content: attr(data-tooltip);
+	position: absolute;
+	display: block;
+	white-space: pre;
+	background-color: var(--tooltipBG);
+	color: var(--tooltipText);
+	border-radius: 99px;
+	padding: 5px 10px;
+	bottom: 0;
+	left: 50%;
+	transform: translate(-50%, 82.5%);
+	font-size: small;
+	line-height: initial;
+	box-shadow: 0 1px 5px rgb(0,0,0,.2);
+	z-index: 99999;
+	animation: showTooltip 100ms ease-in;
+	animation-fill-mode: forwards;
+	transform-origin: left;
+	opacity: 0;
+}
+@keyframes showTooltip {
+	from { opacity: 0; transform: translate(-50%, 82.5%); }
+	to { opacity: 1; transform: translate(-50%, 100%); }
+}
+:root {
+	--tooltipBG: #272335;
+	--tooltipText: #f0f0f0;
+}
+@media (prefers-color-scheme: light) {
+	:root {
+		--tooltipBG: #fff;
+		--tooltipText: #202020;
+	}
 }

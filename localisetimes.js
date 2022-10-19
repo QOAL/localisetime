@@ -152,7 +152,7 @@ function lookForTimes(node = document.body) {
 			tmpTimeText.textContent = thisTime.localisedTime;
 			tmpTime.appendChild(tmpTimeText); //Our converted time
 			//Let people mouse over the converted time to see what was actually written
-			tmpTime.setAttribute("title", chrome.i18n.getMessage("tooltipConverted", thisTime.fullStr + (thisTime.usingManualTZ ? ' ' + manualTZ : '')));
+			tmpTime.setAttribute("data-tooltip", chrome.i18n.getMessage("tooltipConverted", thisTime.fullStr + (thisTime.usingManualTZ ? ' ' + manualTZ : '')));
 			tmpTime.setAttribute("tabIndex", 0); //Allow keyboard interactions
 			tmpTime.setAttribute("data-localised", thisTime.localisedTime); //Used when toggling
 			tmpTime.setAttribute("data-original", thisTime.fullStr); //Used when toggling
@@ -163,6 +163,8 @@ function lookForTimes(node = document.body) {
 			tmpFrag.appendChild(tmpTime);
 			tmpTime.addEventListener("click", toggleTime);
 			tmpTime.addEventListener("keypress", toggleTimeKB);
+			tmpTime.addEventListener("mouseenter", thinkAboutShowingTooltip);
+			tmpTime.addEventListener("mouseleave", thinkAboutShowingTooltip);
 
 			//Do we have any more times to worry about?
 			const endPos = timeInfo[t + 1] ?
@@ -246,10 +248,10 @@ function toggleTime(e) {
 			manualTZStr = ' ' + this.getAttribute("data-manualTZ");
 		}
 		this.lastChild.textContent = this.getAttribute("data-localised");
-		this.setAttribute("title", chrome.i18n.getMessage("tooltipConverted", this.getAttribute("data-original") + manualTZStr));
+		this.setAttribute("data-tooltip", chrome.i18n.getMessage("tooltipConverted", this.getAttribute("data-original") + manualTZStr));
 	} else {
 		this.lastChild.textContent = this.getAttribute("data-original");
-		this.setAttribute("title", chrome.i18n.getMessage("tooltipUnconverted", this.getAttribute("data-localised")));
+		this.setAttribute("data-tooltip", chrome.i18n.getMessage("tooltipUnconverted", this.getAttribute("data-localised")));
 	}
 
 	//Stop any other events from firing (handy if this node is in a link)
@@ -261,6 +263,19 @@ function toggleTimeKB(e) {
 	}
 }
 
+let tooltipTimer;
+function thinkAboutShowingTooltip(e) {
+	clearTimeout(tooltipTimer);
+	if (this.classList.contains("showTooltip")) {
+		this.classList.remove("showTooltip");
+	}
+	if (e.type === "mouseenter") {
+		tooltipTimer = setTimeout(showTooltip.bind(this), 250);
+	}
+}
+function showTooltip() {
+	this.classList.add("showTooltip");
+}
 
 function workOutShortHandOffsets() {
 	//Work out the DST dates for the USA as part
@@ -324,7 +339,7 @@ function handleMutations(mutationsList, observer) {
 						node.parentNode.tagName !== "TEXTAREA" &&
 						node.parentNode.tagName !== "SCRIPT" &&
 						!node.parentNode.isContentEditable &&
-						!(node.parentNode.parentNode && node.parentNode.parentNode.className === "localiseTime")
+						!(node.parentNode.parentNode && node.parentNode.parentNode.classList.contains("localiseTime"))
 					) {
 						handleTextNode(node);
 					}
