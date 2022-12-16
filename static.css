@@ -5,7 +5,7 @@
 	cursor: pointer;
 	background-color: rgba(255,255,255,.1);
 	box-shadow: 0 1px 0 rgba(0,0,0,.1);
-	align-items: center;
+	align-items: first baseline;
 	flex-wrap: nowrap;
 	position: relative;
 	font-weight: normal;
@@ -23,17 +23,15 @@
 	color: inherit;
 	background: unset;
 }
-.localiseTime.showTooltip::after {
-	content: attr(data-tooltip);
-	position: absolute;
+.localiseTimeTooltip {
+	pointer-events: none;
+	position: fixed;
 	display: block;
 	white-space: pre;
 	background-color: var(--tooltipBG);
 	color: var(--tooltipText);
 	border-radius: 99px;
 	padding: 5px 10px;
-	bottom: 0;
-	left: 50%;
 	transform: translate(-50%, 82.5%);
 	font-size: small;
 	line-height: initial;

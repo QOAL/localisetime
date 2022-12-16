@@ -9,6 +9,7 @@ const shortHandInfo = {"PT": "Pacific Time", "ET": "Eastern Time", "CT": "Centra
 const fullTitleRegEx = "[a-z \-'áéí–-]{3,45}?(?= time) time";
 
 let timeRegex;
+let timeRegexM;
 
 let manualTZ;
 
@@ -83,8 +84,10 @@ function buildTimeRegex() {
 	const tzaolStr = Object.keys(userSettings.defaults).join("|") + "|" + fullTitleRegEx;
 	//13% faster, but causes issues when manually converting
 	//[a-z]{2,5}|' + fullTitleRegEx + '
-	timeRegex = new RegExp('\\b(?:([01]?[0-9]|2[0-3])(:|\\.)?([0-5][0-9])?(:[0-5][0-9])?(?: ?([ap]\\.?m?\\.?))?( ?)(to|until|til|and|or|[-\u2010-\u2015])\\6)?([01]?[0-9]|2[0-3])(:|\\.)?([0-5][0-9])?(:[0-5][0-9])?(?: ?([ap]\\.?m?\\.?)(?= \\w|\\b))?(?:(?: ?(' + tzaolStr + '))(( ?)(?:\\+|-)\\15[0-9]{1,2}(?::\\d{2})?)?)?\\b', 'giu');
+	timeRegex = new RegExp('\\b(?:([01]?[0-9]|2[0-3])(:|\\.)?([0-5][0-9])?(:[0-5][0-9])?(?: ?([ap]\\.?m?\\.?))?( ?)(to|until|til|and|or|[-\u2010-\u2015])\\6)?([01]?[0-9]|2[0-3])(:|\\.)?([0-5][0-9])?(:[0-5][0-9])?(?: ?([ap]\\.?m?\\.?)(?= \\w|\\b))?(?:(?: ?([a-z]{2,5}|' + fullTitleRegEx + '))(( ?)(?:\\+|-)\\15[0-9]{1,2}(?::\\d{2})?)?)?\\b', 'giu');
 	//[-|\\u{8211}|\\u{8212}|\\u{8213}]
+
+	timeRegexM = new RegExp('\\b(?:([01]?[0-9]|2[0-3])(:|\\.)?([0-5][0-9])?(:[0-5][0-9])?(?: ?([ap]\\.?m?\\.?))?( ?)(to|until|til|and|or|[-\u2010-\u2015])\\6)?([01]?[0-9]|2[0-3])(:|\\.)?([0-5][0-9])?(:[0-5][0-9])?(?: ?([ap]\\.?m?\\.?)(?= \\w|\\b))?(?:(?: ?(' + tzaolStr + '))(( ?)(?:\\+|-)\\15[0-9]{1,2}(?::\\d{2})?)?)?\\b', 'giu');
 }
 
 function lookForTimes(node = document.body) {
@@ -241,6 +244,8 @@ function toggleTime(e) {
 		return;
 	}
 
+	let newTTT = "";
+
 	//Which state are we in?
 	if (this.getAttribute("data-original") == this.lastChild.textContent) {
 		let manualTZStr = '';
@@ -248,11 +253,14 @@ function toggleTime(e) {
 			manualTZStr = ' ' + this.getAttribute("data-manualTZ");
 		}
 		this.lastChild.textContent = this.getAttribute("data-localised");
-		this.setAttribute("data-tooltip", chrome.i18n.getMessage("tooltipConverted", this.getAttribute("data-original") + manualTZStr));
+		newTTT = chrome.i18n.getMessage("tooltipConverted", this.getAttribute("data-original") + manualTZStr);
 	} else {
 		this.lastChild.textContent = this.getAttribute("data-original");
-		this.setAttribute("data-tooltip", chrome.i18n.getMessage("tooltipUnconverted", this.getAttribute("data-localised")));
+		newTTT = chrome.i18n.getMessage("tooltipUnconverted", this.getAttribute("data-localised"));
 	}
+
+	this.setAttribute("data-tooltip", newTTT);
+	if (tooltipEle) { tooltipEle.textContent = newTTT };
 
 	//Stop any other events from firing (handy if this node is in a link)
 	e.preventDefault();
@@ -263,18 +271,38 @@ function toggleTimeKB(e) {
 	}
 }
 
+let tooltipEle;
 let tooltipTimer;
 function thinkAboutShowingTooltip(e) {
 	clearTimeout(tooltipTimer);
-	if (this.classList.contains("showTooltip")) {
-		this.classList.remove("showTooltip");
+	if (tooltipEle && tooltipEle.parentNode) {
+		tooltipEle = document.body.removeChild(tooltipEle);
 	}
 	if (e.type === "mouseenter") {
-		tooltipTimer = setTimeout(showTooltip.bind(this), 250);
+		tooltipTimer = setTimeout(showTooltip.bind(this, e), 250);
 	}
 }
-function showTooltip() {
-	this.classList.add("showTooltip");
+function showTooltip(e) {
+	if (!tooltipEle) {
+		tooltipEle = document.createElement("div");
+		tooltipEle.className = "localiseTimeTooltip";
+		tooltipEle.addEventListener("animationend", e=>{this.classList.remove(e.animationName)})
+	}
+	tooltipEle.textContent = this.getAttribute("data-tooltip");
+	tooltipEle.style.top = e.clientY + "px";
+	tooltipEle.style.left = e.clientX + "px";
+	tooltipEle.classList.add("showTooltip");
+	document.body.appendChild(tooltipEle);
+	const tmpInfo = tooltipEle.getBoundingClientRect();
+	if (e.clientY + tmpInfo.height * 2 > window.innerHeight) {
+		tooltipEle.style.top = window.innerHeight - tmpInfo.height * 2 + "px";
+	}
+	if (e.clientX + tmpInfo.width / 2 + 10 > window.innerWidth) {
+		tooltipEle.style.left = window.innerWidth - tmpInfo.width / 2 - 10 + "px";
+	} else if (e.clientX - tmpInfo.width / 2 + 10 < 0) {
+		tooltipEle.style.left = tmpInfo.width / 2 + 10 + "px";
+	}
+	
 }
 
 function workOutShortHandOffsets() {
@@ -343,7 +371,7 @@ function handleMutations(mutationsList, observer) {
 					) {
 						handleTextNode(node);
 					}
-				} else {
+				} else if (!node.classList.contains("localiseTimeTooltip")) {
 					nodeList.push(node);
 				}
 			})
@@ -440,7 +468,7 @@ function spotTime(str, correctedOffset) {
 	It's way more than this list now.
 	*/
 
-	const matches = str.matchAll(timeRegex);
+	const matches = str.matchAll(manualTZ ? timeRegexM : timeRegex);
 
 	let timeInfo = [];
 	for (const match of matches) {
