@@ -55,6 +55,24 @@ const abbrsThatLookLikeWords = [
 	'ist', 'kalt', 'gilt', 'mit', 'mut'
 ];
 
+const ambiguousTZ = [
+	"GMT", "BST",
+	"ET", "EST", "EDT",
+	"CT", "CST", "CDT",
+	"MT", "MST", "MDT",
+	"PT", "PST", "PDT",
+	"AST", "ADT",
+	"NST", "NDT",
+	"AKST", "AKDT",
+	"NZST", "NZDT",
+	"AEST", "AEDT",
+	"AEST", "AWST", "ACST",
+	"IST",
+	"CST",
+	"JST",
+	"KST"
+];
+
 //Check the users (first 3) accepted languages, if one is German, then enforce IST being in upper case only as a time zone abbreviation.
 //const needsUppercaseIST = typeof window === "undefined" ? false : navigator.languages.findIndex((l,i) => i < 3 && l.split("-")[0] === "de") !== -1
 
@@ -161,6 +179,9 @@ function lookForTimes(node = document.body) {
 			tmpTime.setAttribute("data-original", thisTime.fullStr); //Used when toggling
 			if (thisTime.usingManualTZ) {
 				tmpTime.setAttribute("data-manualTZ", manualTZ); //Used when toggling
+			}
+			if (thisTime.isAmbiguous) {
+				tmpTime.setAttribute("data-isAmbiguous", true); //Used to identify ambiguous times in tooltips
 			}
 			
 			tmpFrag.appendChild(tmpTime);
@@ -289,6 +310,14 @@ function showTooltip(e) {
 		tooltipEle.addEventListener("animationend", e=>{this.classList.remove(e.animationName)})
 	}
 	tooltipEle.textContent = this.getAttribute("data-tooltip");
+	if (this.hasAttribute("data-isAmbiguous")) {
+		const ambiguousSpan = document.createElement("span");
+		ambiguousSpan.textContent = "The input time is ambiguous about the time of day.";
+		tooltipEle.appendChild(ambiguousSpan);
+		tooltipEle.setAttribute("data-isAmbiguous", true);
+	} else {
+		tooltipEle.removeAttribute("data-isAmbiguous");
+	}
 	tooltipEle.style.top = e.clientY + "px";
 	tooltipEle.style.left = e.clientX + "px";
 	tooltipEle.classList.add("showTooltip");
@@ -525,6 +554,8 @@ function spotTime(str, correctedOffset) {
 			if (!validateTime(match, str, upperTZ, usingManualTZ)) { continue; }
 		}
 
+		let isAmbiguous = false;
+
 		let tHour = parseInt(match[_G.hours]);
 		if (tHour == 0 && !match[_G.mins]) { continue; } //Bail if the hour is 0 and we have no minutes. (We could assume midnight)
 		if (match[_G.meridiem]) {
@@ -535,10 +566,15 @@ function spotTime(str, correctedOffset) {
 		} else if (match[_G.startHour] && tHour < 12 && tHour < match[_G.startHour]) {
 			//Non-exhaustive tHour/startHour test - This probably needs fleshing out?
 			tHour += 12;
-		} else if (tHour > 0 && tHour < 13 && !match[_G.meridiem] && !match[_G.mins]) {
+		} else if (tHour > 0 && tHour < 13 && match[_G.hours].substring(0, 1) !== "0" && !match[_G.meridiem] && !match[_G.mins]) {
 			//Skip this time if the hour is 1-12, and it lacks a meridiem and minutes
 			// Because it's a vague time.
-			continue;
+			//continue;
+			// For now, we're trying to avoid needlessly ignoring a time like this,
+			// But we will mark a time as ambiguous
+			if (ambiguousTZ.includes(upperTZ)) {
+				isAmbiguous = true;
+			}
 		}
 		// I feel like we should handle mixed 12/24 hour times, in time ranges.
 		// "7pm - 21:00 UTC" looks really strange, but is currently valid.
@@ -648,7 +684,8 @@ function spotTime(str, correctedOffset) {
 			fullStr: match[_G.fullStr],
 			matchPos: match.index,
 			usingManualTZ: usingManualTZ,
-			svgTimes: SVGTimes
+			svgTimes: SVGTimes,
+			isAmbiguous: isAmbiguous
 		});
 	}
 
@@ -699,6 +736,9 @@ function validateTime(match, str, upperTZ, usingManualTZ) {
 
 	//Avoid matching font sizes
 	if (match[_G.tzAbr] === 'pt' && !(match[_G.meridiem] || match[_G.mins])) { return false; }
+
+	//Avoid matching estimates that look like years
+	if (upperTZ === 'EST' && !(match[_G.meridiem] || match[_G.separator])) { return false; }
 
 	//Avoid matching progressive resolutions
 	// Taking care to allow germans to shout, as long as the p is lowercase

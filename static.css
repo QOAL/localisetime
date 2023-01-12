@@ -23,6 +23,10 @@
 	color: inherit;
 	background: unset;
 }
+.localiseTime[data-isAmbiguous] {
+	background-image: linear-gradient(to left, var(--redHex), transparent 3px);
+	border-right: 1px solid var(--redHex);
+}
 .localiseTimeTooltip {
 	pointer-events: none;
 	position: fixed;
@@ -30,7 +34,7 @@
 	white-space: pre;
 	background-color: var(--tooltipBG);
 	color: var(--tooltipText);
-	border-radius: 99px;
+	border-radius: 10px;
 	padding: 5px 10px;
 	transform: translate(-50%, 82.5%);
 	font-size: small;
@@ -42,6 +46,13 @@
 	transform-origin: left;
 	opacity: 0;
 }
+.localiseTimeTooltip span {
+	display: block;
+}
+.localiseTimeTooltip[data-isAmbiguous] {
+	background-image: linear-gradient(to top, var(--redHex), transparent 3px);
+	border-bottom: 1px solid var(--redHex);
+}
 @keyframes showTooltip {
 	from { opacity: 0; transform: translate(-50%, 82.5%); }
 	to { opacity: 1; transform: translate(-50%, 100%); }
@@ -49,6 +60,7 @@
 :root {
 	--tooltipBG: #272335;
 	--tooltipText: #f0f0f0;
+	--redHex: #cf3463;
 }
 @media (prefers-color-scheme: light) {
 	:root {

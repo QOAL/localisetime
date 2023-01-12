@@ -62,6 +62,7 @@ const tests = {
 		["In Deutschland war Amazon 2020 mit einem Umsatz von", [undefined]],
 		["720p IST, 720pm ist", ["14:50", "14:50"]],
 		["7:20p IST, 7:20pm ist", ["14:50", "14:50"]],
+		["720p 576p", [undefined]],
 		["Der Schuss bei 1:14 ist sehr schoen abgestimmt. 10/10.", ["20:44"]],
 		["Starship dry mass should be ~105mt, propellant is 1,200mt, suggests ~1,300mt total mass, sans payload. Raptors produce ~ 200mt thrust, so six sea level engines should be able to lift a fully fueled Starship, assuming they red line thrust.", [undefined]],
 		["9:37pm British Summer Time", ["21:37"]],
@@ -69,7 +70,7 @@ const tests = {
 		["November 4th at 6:00 AM Pacific Time", ["14:00"]],
 		["A m;TR2S 2Rt~n#8V, .?Si2ya YzrLAgSf/ SV[2bst+ 1:30 p.m. NDT bJfHiD -mMmP CM3", ["17:00"]], //"02:00", "17:00"
 		["Only 1 cat per person, sorry!", [undefined]],
-		["See you at 1 CAT", [undefined]], //"00:00"
+		["See you at 1 CAT", ["00:00"]], //undefined
 		["Static fire test complete – targeting Tuesday, November 23 at 10:21 p.m. PT for Falcon 9’s launch of @NASA’s Double Asteroid Redirection Test", ["06:21"]],
 		["9am et 9am 9am pt", ["14:00", "17:00"]],
 		//["7pm - 21:00 UTC", [""]], //This is just a strangely formatted time range, I don't know what to do with it. (It's currently valid)
@@ -79,6 +80,11 @@ const tests = {
 		["30:15 gmt", [undefined]],
 		["3 a bit", [undefined]],
 		["3 a BIT", ["16:00"]],
+		["Population (2015 est.)", [undefined]],
+		["20:15 EST", ["02:15"]],
+		["12 CEST", ["11:00"]],
+		["09 CEST", ["08:00"]],
+		["9 CEST", ["08:00"]],
 	],
 	"Etc/GMT+7": [
 		["5:30:15-7pm GMT", ["10:30:15 – 12:00"]],
