@@ -563,7 +563,7 @@ function spotTime(str, correctedOffset) {
 			if (match[_G.meridiem][0].toLowerCase() == 'p') {
 				tHour += 12;
 			}
-		} else if (match[_G.startHour] && tHour < 12 && tHour < match[_G.startHour]) {
+		} else if (match[_G.startHour] && tHour < 12 && tHour < match[_G.startHour] && match[_G.startHour] < 12 && !match[_G.meridiem]) {
 			//Non-exhaustive tHour/startHour test - This probably needs fleshing out?
 			tHour += 12;
 		} else if (tHour > 0 && tHour < 13 && match[_G.hours].substring(0, 1) !== "0" && !match[_G.meridiem] && !match[_G.mins]) {
