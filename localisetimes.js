@@ -233,7 +233,7 @@ function lookForTextTimes(node, timeInfo) {
 	//Decimal range: 128336 - 128359
 
 	const maybeClock = node.textContent.codePointAt(timeInfo[0][2] - 2);
-	if (maybeClock && maybeClock >= 128336 && maybeClock <= 128359) { return }
+	if (maybeClock && ((maybeClock >= 128336 && maybeClock <= 128359) || maybeClock === 8204)) { return }
 
 	let newTextContent = node.textContent.substr(0, timeInfo[0].matchPos);
 
@@ -250,6 +250,11 @@ function lookForTextTimes(node, timeInfo) {
 }
 
 function emojiClock(hours, minutes) {
+
+	if (!userSettings.includeClock) {
+		return "\u200c" //8204
+	}
+
 	const whichClock = 
 		//Are we using the full hour or half hour version?
 		((minutes <= 15 || minutes > 45) ? 0 : 12) +
