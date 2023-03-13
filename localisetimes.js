@@ -301,9 +301,7 @@ let tooltipEle;
 let tooltipTimer;
 function thinkAboutShowingTooltip(e) {
 	clearTimeout(tooltipTimer);
-	if (tooltipEle && tooltipEle.parentNode) {
-		tooltipEle = document.body.removeChild(tooltipEle);
-	}
+	hideTooltip()
 	if (e.type === "mouseenter") {
 		tooltipTimer = setTimeout(showTooltip.bind(this, e), 250);
 	}
@@ -336,7 +334,13 @@ function showTooltip(e) {
 	} else if (e.clientX - tmpInfo.width / 2 + 10 < 0) {
 		tooltipEle.style.left = tmpInfo.width / 2 + 10 + "px";
 	}
-	
+
+	onRemove(e.target, hideTooltip)
+}
+function hideTooltip() {
+	if (tooltipEle && tooltipEle.parentNode) {
+		tooltipEle = document.body.removeChild(tooltipEle);
+	}
 }
 
 function workOutShortHandOffsets() {
@@ -822,4 +826,18 @@ function newClockElement(inHours = 4, inMinutes = 0, inSeconds = 0) {
 	newClock.children[0].children[1].setAttribute("d", newPath);
 
 	return newClock;
+}
+
+function onRemove(element, onDetachCallback) {
+    const observer = new MutationObserver(function () {
+        if (!element || !element.closest('html')) {
+            observer.disconnect();
+            onDetachCallback();
+        }
+    })
+
+    observer.observe(document, {
+         childList: true,
+         subtree: true
+    });
 }
