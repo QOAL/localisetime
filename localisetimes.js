@@ -310,7 +310,11 @@ function showTooltip(e) {
 	if (!tooltipEle) {
 		tooltipEle = document.createElement("div");
 		tooltipEle.className = "localiseTimeTooltip";
-		tooltipEle.addEventListener("animationend", e=>{this.classList.remove(e.animationName)})
+		tooltipEle.addEventListener("animationend", e=>{this.classList.remove(e.animationName)});
+		const bodyFont = getComputedStyle(document.body).getPropertyValue("font-family").split(", ");
+		if (bodyFont.length === 1 && (bodyFont[0] === "serif" || bodyFont[0].includes("imes"))) {
+			tooltipEle.style.fontFamily = "sans-serif";
+		}
 	}
 	tooltipEle.textContent = this.getAttribute("data-tooltip");
 	if (this.hasAttribute("data-isAmbiguous")) {
@@ -386,8 +390,11 @@ function init() {
 
 	//We need to watch for modifications to the document.body, so we can check for new text nodes to look at
 	observer = new MutationObserver(handleMutations);
+	observer.resume = function() {
+		this.observe(document.body, { attributes: false, childList: true, subtree: true, characterData: true });
+	}.bind(observer)
 	if (userSettings.enabled) {
-		observer.observe(document.body, {attributes: false, childList: true, subtree: true});
+		observer.resume();
 	}
 }
 function handleMutations(mutationsList, observer) {
@@ -397,16 +404,13 @@ function handleMutations(mutationsList, observer) {
 	let nodeList = [];
 	mutationsList.forEach((mutation) => {
 		//handle mutations here
+		if (mutation.type === "characterData" && areWeInterestedInThisTextNode(mutation.target)) {
+			handleTextNode(mutation.target);
+		}
 		if (mutation.addedNodes.length > 0) {
 			mutation.addedNodes.forEach(node => {
 				if (node.nodeType === Node.TEXT_NODE) {
-					if (node.nodeValue.trim().length > 0 &&
-						node.parentNode &&
-						node.parentNode.tagName !== "TEXTAREA" &&
-						node.parentNode.tagName !== "SCRIPT" &&
-						!node.parentNode.isContentEditable &&
-						!(node.parentNode.parentNode && node.parentNode.parentNode.classList.contains("localiseTime"))
-					) {
+					if (areWeInterestedInThisTextNode(node)) {
 						handleTextNode(node);
 					}
 				} else if (!node.classList.contains("localiseTimeTooltip")) {
@@ -423,7 +427,17 @@ function handleMutations(mutationsList, observer) {
 	});
 
 	//Now it's time to restart the observer
-	observer.observe(document.body, {attributes: false, childList: true, subtree: true});
+	observer.resume();
+}
+
+function areWeInterestedInThisTextNode(node) {
+	return (node.nodeValue || node.textContent).trim().length > 0 &&
+	node.parentNode &&
+	node.parentNode.tagName !== "TEXTAREA" &&
+	node.parentNode.tagName !== "SCRIPT" &&
+	!node.parentNode.isContentEditable &&
+	!node.parentNode.classList.contains("localiseTimeTooltip") &&
+	!(node.parentNode.parentNode && node.parentNode.parentNode.classList.contains("localiseTime"))
 }
 
 //Listen for, and process, any relevant messages being passed from the popup menu (browser_action)
@@ -435,7 +449,7 @@ function contentMessageListener(request, sender, sendResponse) {
 			manualTZ = request.selectedTZ;
 			observer.disconnect();
 			lookForTimes();
-			observer.observe(document.body, {attributes: false, childList: true, subtree: true});
+			observer.resume();
 			break;
 
 		case 'getManualTZ':
@@ -466,7 +480,7 @@ function contentMessageListener(request, sender, sendResponse) {
 			userSettings.enabled = Boolean(request.enabled);
 
 			if (userSettings.enabled) {
-				observer.observe(document.body, {attributes: false, childList: true, subtree: true});
+				observer.resume();
 				lookForTimes();
 			} else {
 				observer.disconnect();
@@ -829,14 +843,14 @@ function newClockElement(inHours = 4, inMinutes = 0, inSeconds = 0) {
 }
 
 function onRemove(element, onDetachCallback) {
-    const observer = new MutationObserver(function () {
+    const rmObserver = new MutationObserver(function () {
         if (!element || !element.closest('html')) {
-            observer.disconnect();
+            rmObserver.disconnect();
             onDetachCallback();
         }
     })
 
-    observer.observe(document, {
+    rmObserver.observe(document, {
          childList: true,
          subtree: true
     });
