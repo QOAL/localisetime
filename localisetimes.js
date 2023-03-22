@@ -5,6 +5,7 @@ let observer;
 let dateTimeFormats = Array(2);
 
 const shortHandInfo = {"PT": "Pacific Time", "ET": "Eastern Time", "CT": "Central Time", "MT": "Mountain Time"};
+const dstAlertMap = {}
 
 const fullTitleRegEx = "[a-z \-'áéí–-]{3,45}?(?= time) time";
 
@@ -83,7 +84,8 @@ const defaultSettings = {
 	includeClock: true,
 	blankSeparator: true,
 	avoidMatchingFloatsManually: true,
-	enabled: true
+	correctDSTconfusion: true,
+	enabled: true,
 }
 
 let userSettings = { ...defaultSettings }
@@ -143,12 +145,7 @@ function lookForTimes(node = document.body) {
 		}
 
 		if (!haveInsertedStaticCSS) {
-			let tmpLink = document.createElement("link");
-			tmpLink.rel = "stylesheet";
-			tmpLink.type = "text/css";
-			tmpLink.href = chrome.runtime.getURL("static.css");
-			document.head.appendChild(tmpLink);
-			haveInsertedStaticCSS = true;
+			insertStyleSheet()
 		}
 
 		let tmpFrag = document.createDocumentFragment();
@@ -183,6 +180,9 @@ function lookForTimes(node = document.body) {
 			if (thisTime.isAmbiguous) {
 				tmpTime.setAttribute("data-isAmbiguous", true); //Used to identify ambiguous times in tooltips
 			}
+			if (thisTime.hasDSTConfusion) {
+				tmpTime.setAttribute("data-hasDSTConfusion", JSON.stringify(thisTime.hasDSTConfusion)); //Used to identify times that may be suffering from DST confusion in tooltips
+			}
 			
 			tmpFrag.appendChild(tmpTime);
 			tmpTime.addEventListener("click", toggleTime);
@@ -202,6 +202,15 @@ function lookForTimes(node = document.body) {
 		//replace the old text node with our mangled one
 		node.parentElement.replaceChild(tmpFrag, node);
 	}
+}
+
+function insertStyleSheet() {
+	let tmpLink = document.createElement("link");
+	tmpLink.rel = "stylesheet";
+	tmpLink.type = "text/css";
+	tmpLink.href = chrome.runtime.getURL("static.css");
+	document.head.appendChild(tmpLink);
+	haveInsertedStaticCSS = true;
 }
 
 function handleTextNode(node, timeInfo) {
@@ -325,12 +334,28 @@ function showTooltip(e) {
 	} else {
 		tooltipEle.removeAttribute("data-isAmbiguous");
 	}
-	tooltipEle.style.top = e.clientY + "px";
+	if (this.hasAttribute("data-hasDSTConfusion")) {
+		const dstSpan1 = document.createElement("span");
+		const dstSpan2 = document.createElement("span");
+		const dstInfo = JSON.parse(this.getAttribute("data-hasDSTConfusion"))
+		dstSpan1.textContent = `The input time uses ${dstInfo.originalTZ}, however ${dstInfo.correctedTZ} is currently observed instead.`;
+		if (dstInfo.renderedCorrect) {
+			dstSpan2.textContent = "This time has been automatically corrected for you.";
+		} else {
+			dstSpan2.textContent = `Treating the input time as ${dstInfo.correctedTZ}, the correct localised time is ${dstInfo.correctedTime}.`;
+		}
+		tooltipEle.appendChild(dstSpan1);
+		tooltipEle.appendChild(dstSpan2);
+		tooltipEle.setAttribute("data-hasDSTConfusion", true);
+	} else {
+		tooltipEle.removeAttribute("data-hasDSTConfusion");
+	}
+	tooltipEle.style.top = (e.clientY + 20) + "px";
 	tooltipEle.style.left = e.clientX + "px";
 	tooltipEle.classList.add("showTooltip");
 	document.body.appendChild(tooltipEle);
 	const tmpInfo = tooltipEle.getBoundingClientRect();
-	if (e.clientY + tmpInfo.height * 2 > window.innerHeight) {
+	if (e.clientY + 20 + tmpInfo.height * 2 > window.innerHeight) {
 		tooltipEle.style.top = window.innerHeight - tmpInfo.height * 2 + "px";
 	}
 	if (e.clientX + tmpInfo.width / 2 + 10 > window.innerWidth) {
@@ -375,7 +400,11 @@ function workOutShortHandOffsets() {
 		tmpDate.setUTCMonth(10, 7 - tmpDate.getUTCDay())
 		const fromDST = tmpDate.getTime()
 
-		userSettings.defaults[info.short] = (tmpNow > toDST && tmpNow < fromDST) ? userSettings.defaults[info.daylight] : userSettings.defaults[info.standard]
+		const isDaylight = (tmpNow > toDST && tmpNow < fromDST)
+		const usedTimeZone =  isDaylight? info.daylight : info.standard
+		userSettings.defaults[info.short] = userSettings.defaults[usedTimeZone]
+
+		dstAlertMap[!isDaylight ? info.daylight : info.standard] = usedTimeZone
 
 	})
 }
@@ -577,6 +606,14 @@ function spotTime(str, correctedOffset) {
 			if (!validateTime(match, str, upperTZ, usingManualTZ)) { continue; }
 		}
 
+		let hasDSTConfusion = Object.hasOwn(dstAlertMap, upperTZ) ?
+			{
+				correctedTZ: dstAlertMap[upperTZ],
+				originalTZ: upperTZ,
+				correctedTime: "",
+				renderedCorrect: userSettings.correctDSTconfusion
+			} : false
+
 		let isAmbiguous = false;
 
 		let tHour = parseInt(match[_G.hours]);
@@ -618,25 +655,16 @@ function spotTime(str, correctedOffset) {
 			tCorrected -= dateObj.getTimezoneOffset();
 		}
 
-		if (tCorrected < 0) { tCorrected += 1440; }
-
 		//Build the localised time
-		let tmpExplode = m2h(tCorrected);
-		let tmpDate = new Date(
-			dateObj.getUTCFullYear(),
-			dateObj.getUTCMonth(),
-			dateObj.getUTCDate(),
-			tmpExplode[0],
-			tmpExplode[1],
-			match[_G.seconds] ? match[_G.seconds].substring(1) : 0
+		const lTime = buildLocalisedDate(
+			tCorrected,
+			match[_G.seconds],
+			match[_G.fullStr]
 		);
-		if (isNaN(tmpDate)) {
-			console.log(`Localise Times: Invlaid date time created for "${match[_G.fullStr]}"`);
-			continue;
-		}
-		let localeTimeString = formatLocalisedTime(tmpDate, match[_G.seconds])
+		if (!lTime) { continue; }
+		let localeTimeString = lTime.date;
 
-		let SVGTimes = [ ...tmpExplode ];
+		let SVGTimes = lTime.hm;
 
 		let localeStartTimeString = '';
 
@@ -646,6 +674,15 @@ function spotTime(str, correctedOffset) {
 			if (+match[_G.startHour] === 0) {
 				validMidnight = !match[_G.meridiem] && !match[_G.startMeridiem];
 			}
+		}
+
+		if (hasDSTConfusion) {
+			const cTime = buildLocalisedDate(
+				tCorrected + (userSettings.defaults[upperTZ] - userSettings.defaults[hasDSTConfusion.correctedTZ]),
+				match[_G.seconds],
+				match[_G.fullStr]
+			);
+			hasDSTConfusion.correctedTime = cTime.date
 		}
 
 		if (match[_G.startHour] && validMidnight) {
@@ -676,43 +713,63 @@ function spotTime(str, correctedOffset) {
 			let startCorrected = startMinsFromMidnight - mainOffset;
 			startCorrected -= dateObj.getTimezoneOffset();
 
-			if (startCorrected < 0) { startCorrected += 1440; }
-
 			//Build the localised time
-			let tmpExplode = m2h(startCorrected);
-			let tmpDate = new Date(
-				dateObj.getUTCFullYear(),
-				dateObj.getUTCMonth(),
-				dateObj.getUTCDate(),
-				tmpExplode[0],
-				tmpExplode[1],
-				match[_G.startSeconds] ? match[_G.startSeconds].substring(1) : 0
+			const lSTime = buildLocalisedDate(
+				startCorrected,
+				match[_G.startSeconds],
+				match[_G.fullStr]
 			);
-			if (isNaN(tmpDate)) {
-				console.log(`Localise Times: Invlaid date time created for "${match[_G.fullStr]}"`);
-				continue;
-			}
+			if (!lSTime) { continue; }
 			//It would be nice to avoid including the meridiem if it's the same as the main time
 			let timeSeparator = match[_G.timeSeparator].length === 1 ? "–" : match[_G.timeSeparator];
 			//Match the granularity of the output to the input
-			localeStartTimeString = formatLocalisedTime(tmpDate, match[_G.startSeconds]) + " " + timeSeparator + " ";//' – ';
+			localeStartTimeString = lSTime.date + " " + timeSeparator + " ";//' – ';
 			//Should we capture the user defined separator and reuse it? - Yes, and we are now.
 
-			SVGTimes = [ ...tmpExplode ];
+			SVGTimes = lSTime.hm;
+
+			if (hasDSTConfusion) {
+				const cSTime = buildLocalisedDate(
+					startCorrected + (userSettings.defaults[upperTZ] - userSettings.defaults[hasDSTConfusion.correctedTZ]),
+					match[_G.startSeconds],
+					match[_G.fullStr]
+				);
+				hasDSTConfusion.correctedTime = cSTime.date + " " + timeSeparator + " " + hasDSTConfusion.correctedTime
+			}
 		}
 
 		//Store the localised time, the time that we matched, its offset and length
 		timeInfo.push({
-			localisedTime: localeStartTimeString + localeTimeString,
+			localisedTime: hasDSTConfusion && userSettings.correctDSTconfusion ? hasDSTConfusion.correctedTime : localeStartTimeString + localeTimeString,
 			fullStr: match[_G.fullStr],
 			matchPos: match.index,
 			usingManualTZ: usingManualTZ,
 			svgTimes: SVGTimes,
-			isAmbiguous: isAmbiguous
+			isAmbiguous: isAmbiguous,
+			hasDSTConfusion: hasDSTConfusion,
 		});
 	}
 
 	return timeInfo;
+}
+function buildLocalisedDate(timeMins, seconds = 0, fullStr = '') {
+	if (timeMins < 0) { timeMins += 1440; }
+	const tmpExplode = m2h(timeMins);
+
+	const newDate = new Date(
+		dateObj.getUTCFullYear(),
+		dateObj.getUTCMonth(),
+		dateObj.getUTCDate(),
+		tmpExplode[0],
+		tmpExplode[1],
+		seconds ? seconds.substring(1) : 0
+	);
+	if (isNaN(newDate)) {
+		console.log(`Localise Times: Invlaid date time created for "${match[_G.fullStr]}"`);
+		return false
+	}
+
+	return { hm: tmpExplode, date: formatLocalisedTime(newDate,seconds) }
 }
 function m2h(mins) {
 	mins = Math.abs(mins);
@@ -764,7 +821,7 @@ function validateTime(match, str, upperTZ, usingManualTZ) {
 	if (match[_G.tzAbr] === 'pt' && !(match[_G.meridiem] || match[_G.mins])) { return false; }
 
 	//Avoid matching estimates that look like years
-	if (upperTZ === 'EST' && !(match[_G.meridiem] || match[_G.separator])) { return false; }
+	if (upperTZ === 'EST' && !(match[_G.meridiem] || match[_G.separator]) && parseInt(match[_G.hours] + match[_G.mins]) > 14) { return false; }
 
 	//Avoid matching progressive resolutions
 	// Taking care to allow germans to shout, as long as the p is lowercase

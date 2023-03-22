@@ -162,6 +162,17 @@
 	},
 
 
+	"popupCorrectDSTconfusionTitle": {
+		"message": "Daylight savings confusion",
+		"description": "Title of the option"
+	},
+
+	"popupCorrectDSTconfusionDescription": {
+		"message": "Automatically convert times with DST mix ups",
+		"description": "Description for the automatically correct DST confusion option"
+	},
+
+
 	"popupSharedAbbrTitle": {
 		"message": "Shared Abbreviations",
 		"description": "Title of the list section used to pick which timezones go with which abbreviation"

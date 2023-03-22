@@ -23,7 +23,8 @@
 	color: inherit;
 	background: unset;
 }
-.localiseTime[data-isAmbiguous] {
+.localiseTime[data-isAmbiguous],
+.localiseTime[data-hasDSTConfusion] {
 	background-image: linear-gradient(to left, var(--redHex), transparent 3px);
 	border-right: 1px solid var(--redHex);
 }
@@ -36,26 +37,27 @@
 	color: var(--tooltipText);
 	border-radius: 10px;
 	padding: 5px 10px;
-	transform: translate(-50%, 82.5%);
+	transform: translate(-50%, 17.5%);
 	font-size: small;
 	line-height: initial;
 	box-shadow: 0 1px 5px rgb(0,0,0,.2);
 	z-index: 99999;
 	animation: showTooltip 100ms ease-in;
 	animation-fill-mode: forwards;
-	transform-origin: left;
+	transform-origin: left top;
 	opacity: 0;
 }
 .localiseTimeTooltip span {
 	display: block;
 }
-.localiseTimeTooltip[data-isAmbiguous] {
+.localiseTimeTooltip[data-isAmbiguous],
+.localiseTimeTooltip[data-hasDSTConfusion] {
 	background-image: linear-gradient(to top, var(--redHex), transparent 3px);
 	border-bottom: 1px solid var(--redHex);
 }
 @keyframes showTooltip {
-	from { opacity: 0; transform: translate(-50%, 82.5%); }
-	to { opacity: 1; transform: translate(-50%, 100%); }
+	from { opacity: 0; transform: translate(-50%, 17.5%); }
+	to { opacity: 1; transform: translate(-50%, 0%); }
 }
 :root {
 	--tooltipBG: #272335;

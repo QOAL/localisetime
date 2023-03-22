@@ -73,6 +73,8 @@ function patchWebExt(input, tzInfo) {
 	//Force north american time aliases into summer time
 	output = output.replace("(tmpNow > toDST && tmpNow < fromDST)", "true");
 
+	output = output.replace("correctDSTconfusion: true,", "correctDSTconfusion: false,");
+
 	output = tzInfo + "\n" + output;
 
 	return output

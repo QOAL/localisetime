@@ -97,8 +97,8 @@ const tests = {
 		["5PM PDT, 8PM EDT", ["17:00", "17:00"]],
 		["5PM PST, 8PM EST", ["18:00", "18:00"]],
 		["1:10 P. BST", ["05:10"]],
-		["1pm PT, 2pm MT, 3pm CT, 4pm ET", ["13:00", "13:00", "13:00", "13:00"]]
-	]
+		["1pm PT, 2pm MT, 3pm CT, 4pm ET", ["13:00", "13:00", "13:00", "13:00"]],
+	],
 }
 let passCount = 0
 let totalTests = 0

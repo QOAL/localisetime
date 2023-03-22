@@ -53,13 +53,15 @@ const defaultSettings = {
 	includeClock: true,
 	blankSeparator: true,
 	avoidMatchingFloatsManually: true,
-	enabled: true
+	correctDSTconfusion: true,
+	enabled: true,
 }
 
 const optionsMap = {
 	showClock: "includeClock",
 	blankSeparator: "blankSeparator",
 	avoidManualFloats: "avoidMatchingFloatsManually",
+	correctDSTconfusion: "correctDSTconfusion",
 }
 
 let userSettings = { ...defaultSettings }
@@ -130,6 +132,9 @@ function init() {
 		["avoidManualFloatsTitle", "popupAvoidManualFloatsTitle"],
 		["avoidManualFloats", "popupAvoidManualFloatsDescription"],
 
+		["correctDSTconfusionTitle", "popupCorrectDSTconfusionTitle"],
+		["correctDSTconfusion", "popupCorrectDSTconfusionDescription"],
+
 		["sharedAbbrDesc", "popupSharedAbbrDesc"],
 		["ignoredAbbrDesc", "popupIgnoreAbbrDesc"],
 
@@ -160,6 +165,7 @@ function init() {
 	document.getElementsByName("showClock")[0].addEventListener("change", updateSetting);
 	document.getElementsByName("blankSeparator")[0].addEventListener("change", updateSetting);
 	document.getElementsByName("avoidManualFloats")[0].addEventListener("change", updateSetting);
+	document.getElementsByName("correctDSTconfusion")[0].addEventListener("change", updateSetting);
 	document.getElementById("abbrPage").addEventListener("click", toggleAbbrPage);
 
 	normalCont = document.getElementById("normalContent");
@@ -533,6 +539,8 @@ function toggleOptionsPageMode() {
 		document.getElementsByName("blankSeparator")[0].checked = userSettings.blankSeparator;
 
 		document.getElementsByName("avoidManualFloats")[0].checked = userSettings.avoidMatchingFloatsManually;
+
+		document.getElementsByName("correctDSTconfusion")[0].checked = userSettings.correctDSTconfusion;
 
 
 		buildSharedAbbrList();
