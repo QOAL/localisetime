@@ -442,7 +442,7 @@ function handleMutations(mutationsList, observer) {
 					if (areWeInterestedInThisTextNode(node)) {
 						handleTextNode(node);
 					}
-				} else if (!node.classList.contains("localiseTimeTooltip")) {
+				} else if (node && node.classList && !node.classList.contains("localiseTimeTooltip")) {
 					nodeList.push(node);
 				}
 			})
