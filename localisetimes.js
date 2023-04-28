@@ -104,10 +104,10 @@ function buildTimeRegex() {
 	const tzaolStr = Object.keys(userSettings.defaults).join("|") + "|" + fullTitleRegEx;
 	//13% faster, but causes issues when manually converting
 	//[a-z]{2,5}|' + fullTitleRegEx + '
-	timeRegex = new RegExp('\\b(?:([01]?[0-9]|2[0-3])(:|\\.)?([0-5][0-9])?(:[0-5][0-9])?(?: ?([ap]\\.?m?\\.?))?( ?)(to|until|til|and|or|[-\u2010-\u2015])\\6)?([01]?[0-9]|2[0-3])(:|\\.)?([0-5][0-9])?(:[0-5][0-9])?(?: ?([ap]\\.?m?\\.?)(?= \\w|\\b))?(?:(?: ?([a-z]{2,5}|' + fullTitleRegEx + '))(( ?)(?:\\+|-)\\15[0-9]{1,2}(?::\\d{2})?)?)?\\b', 'giu');
+	timeRegex = new RegExp('\\b(?:([01]?[0-9]|2[0-3])(:|\\.)?([0-5][0-9])?(:[0-5][0-9])?(?: ?([ap]\\.?m?\\.?))?( ?)(to|until|til|and|or|[-\u2010-\u2015])\\6)?([01]?[0-9]|2[0-3])(:|\\.)?([0-5][0-9])?(:[0-5][0-9])?(?: ?([ap]\\.?m?\\.?)(?= \\w|\\b))?(?:(?: ?([a-z]{2,5}|' + fullTitleRegEx + '))(( ?)(?:\\+|-)\\15[0-9]{1,2}(?::?\\d{2})?)?)?\\b', 'giu');
 	//[-|\\u{8211}|\\u{8212}|\\u{8213}]
 
-	timeRegexM = new RegExp('\\b(?:([01]?[0-9]|2[0-3])(:|\\.)?([0-5][0-9])?(:[0-5][0-9])?(?: ?([ap]\\.?m?\\.?))?( ?)(to|until|til|and|or|[-\u2010-\u2015])\\6)?([01]?[0-9]|2[0-3])(:|\\.)?([0-5][0-9])?(:[0-5][0-9])?(?: ?([ap]\\.?m?\\.?)(?= \\w|\\b))?(?:(?: ?(' + tzaolStr + '))(( ?)(?:\\+|-)\\15[0-9]{1,2}(?::\\d{2})?)?)?\\b', 'giu');
+	timeRegexM = new RegExp('\\b(?:([01]?[0-9]|2[0-3])(:|\\.)?([0-5][0-9])?(:[0-5][0-9])?(?: ?([ap]\\.?m?\\.?))?( ?)(to|until|til|and|or|[-\u2010-\u2015])\\6)?([01]?[0-9]|2[0-3])(:|\\.)?([0-5][0-9])?(:[0-5][0-9])?(?: ?([ap]\\.?m?\\.?)(?= \\w|\\b))?(?:(?: ?(' + tzaolStr + '))(( ?)(?:\\+|-)\\15[0-9]{1,2}(?::?\\d{2})?)?)?\\b', 'giu');
 }
 
 function lookForTimes(node = document.body) {
@@ -645,6 +645,12 @@ function spotTime(str, correctedOffset) {
 		//Sometimes people write a tz and then +X (like UTC+1)
 		if (match[_G.offset]) {
 			let timeOffset = match[_G.offset].replace(whiteSpaceRegEx, '').split(':');
+			if (timeOffset.length === 1 && (timeOffset[0].length === 4 || timeOffset[0].length === 5)) {
+				timeOffset = [
+					timeOffset[0].substring(0, timeOffset[0].length - 2),
+					timeOffset[0].substring(timeOffset[0].length - 2)
+				]
+			}
 			hourOffset = parseInt(timeOffset[0]) * 60 + (timeOffset[1] ? parseInt(timeOffset[1]) : 0);
 		}
 		const mainOffset = (fullNameOffset !== false ? fullNameOffset : userSettings.defaults[upperTZ]) + hourOffset;
