@@ -1,4 +1,5 @@
 :root {
+	--slate: #272335;
 	--bg-col-hex: #272335;
 	--bg-col-rgb: 39,35,53;
 	--green-rgb: 48,203,156;
@@ -6,6 +7,11 @@
 	--dark-border: #1b1825;
 	--dark-green-hex: #2a5c58;
 	--red-dark-blend: #7b2c4c;
+	--redHSL: 342deg, 75%, 81%;
+	--redH: 342deg;
+	--greenHSL: 162deg, 76%, 80%;
+	--greenH: 162deg;
+	--text: #f0f0f0;
 }
 
 ::-webkit-scrollbar { background-color: var(--dark-border); width: 8px; }
@@ -20,7 +26,7 @@ body {
 	z-index: 99;
 	font-family: -apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif;
 	font-size: medium;
-	color: #f0f0f0;	
+	color: var(--text);
 	background-color: var(--bg-col-hex);
 	overflow: hidden;
 	line-height: 1.333;
@@ -42,6 +48,9 @@ select, button, h3 {
 	outline: none;
 }
 
+#extensionNameText {
+	color: #fff;
+}
 
 h3 {
 	font-size: large;
@@ -280,7 +289,7 @@ h3 > div {
 	height: 25px;
 }
 .buttonSVG path {
-	fill: rgb(var(--bg-col-rgb));
+	fill: var(--slate);
 }
 #optionsPage:hover svg, #optionsPage:focus svg {
 	animation-play-state: running;
@@ -578,17 +587,18 @@ li input {
 #userIgnoredList div {
 	width: 25%;
 	text-align: center;
-	padding: 2px 0;
 	box-sizing: border-box;
 	border-radius: 2.5px;
 	outline: none;
+	font-weight: 600;
+	font-size: smaller;
+	padding: 4px 0;
 }
 #userIgnoredList div:hover, #userIgnoredList div:focus {
 	background-color: rgba(var(--red-rgb), .33);
 }
 #userIgnoredList div:active, #userIgnoredList div.ignored {
 	background-color: rgba(var(--red-rgb), 1);
-	font-weight: 600;
 	transition: all .25s;
 }
 
@@ -606,90 +616,33 @@ li input {
 @media (prefers-color-scheme: light) {
 	:root {
 		--bg-col-hex: #fff;
+		--bg-col-rgb: 255,255,255;
 		--dark-border: #f0f0f0;
+		--dark-green-hex: #bbeede;
+		--red-dark-blend: #efbccc;
+		--text: #272335;
 	}
-	body {
-		color: #202020;
-	}
-	button {
-		color: #272335;
-	}
-	button {
-		background-color: rgba(var(--green-rgb), 1);
-		color: #272335;
-	}
-	button:focus, button:hover {
-		background-color: rgba(var(--green-rgb), .75);
-	}
-	button:active {
-		background-color: rgba(var(--green-rgb), .5);
-		/*color: #1b1825;*/
-	}
-	select {
-		background-color: rgba(var(--red-rgb), 1);
-		color: #fff;
-	}
-	select:hover, select:focus {
-		background-color: rgba(var(--red-rgb), .75);
-	}
-	select:active {
-		background-color: rgba(var(--red-rgb), .5);
-		color: #272335;
-	}
-	option {
-		background: var(--bg-col-hex);
-		color: rgb(var(--bg-col-rgb));
-	}
-	.bgRedButton {
-		color: currentColor;
+	button, button.currentTab {
+		color: var(--slate);
+		text-shadow: none;
 	}
 	button:active div {
 		text-shadow: none;
 	}
-	h3 {
-		text-shadow: none;
-		color: #fff;
-	}
-	li > h5 {
-		color: #fff;
-	}
-	input[type="radio"] + span, input[type="checkbox"] + span {
-		--radioCheckCol: rgb(var(--red-rgb));
-	}
-	input[type="radio"]:checked + span, input[type="checkbox"]:checked + span {
-		--radioRingCol: rgb(var(--red-rgb));
-		--radioCheckCol: rgb(var(--red-rgb));
-	}
-	input[type="radio"]:focus + span, input[type="radio"]:hover + span, input[type="checkbox"]:focus + span, input[type="checkbox"]:hover + span {
-		color: rgb(var(--red-rgb));
-	}
-	button.currentTab {
-		background-color: rgb(var(--green-rgb));
-		color: rgb(var(--bg-col-rgb));
-	}
-	button.inactiveTab {
-		background-color: rgb(var(--bg-col-rgb));/*rgb(var(--red-rgb));*/
-		color: #fff;
-	}
-	button.inactiveTab:focus, button.inactiveTab:hover {
-		background-color: var(--red-dark-blend);
-	}
-	button.inactiveTab:active {
-		background-color: rgba(var(--red-rgb), 1);
-	}
+	/*button.bgRedButton:active, button.inactiveTab:active {
+		color: #f0f0f0;
+	}*/
 	.scrollCont {
-		background-color: #fdfdfd;
+		background-color: #fcfcfc;
 	}
 	.scrollCont input:checked + label {
-		color: var(--dark-green-hex);
+		color: hsl(var(--greenH), 75%, 30%);
 	}
-	.scrollCont input + label:active {
-		--labelOpacity1: .33;
-		--labelOpacity2: .5;
+	li > h5 {
+		color: #f0f0f0;
 	}
-	.scrollCont input:checked + label:hover, .scrollCont input:checked + label:focus {
-		--labelOpacity1: .33;
-		--labelOpacity2: .5;
+	#userIgnoredList div:active, #userIgnoredList div.ignored {
+		color: #f0f0f0;
 	}
-
+	
 }
