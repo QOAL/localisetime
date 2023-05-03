@@ -10,6 +10,22 @@
 	},
 
 
+	"popupPauseMenuTitle": {
+		"message": "Pause",
+		"description": "Title text of the pause option menu"
+	},
+
+	"popupPauseMenuDomain": {
+		"message": "Website",
+		"description": "Pause the extension on this domain"
+	},
+
+	"popupPauseMenuPage": {
+		"message": "Page",
+		"description": "Pause the extension on this webpage"
+	},
+
+
 	"popupDisableExtension": {
 		"message": "Pause the extension",
 		"description": "Pauses execution of the extension"
@@ -27,8 +43,13 @@
 	},
 
 	"popupManualConvertSourceText": {
-		"message": "Please select the source time zone:",
+		"message": "Source time zone:",
 		"description": "Manual conversion usage hint"
+	},
+
+	"popupManualConvertRemember": {
+		"message": "Remember this",
+		"description": "Remember this manual conversion on subsequent page loads"
 	},
 
 	"OK": {

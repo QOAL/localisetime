@@ -102,11 +102,16 @@ function init() {
 	[
 		["extensionNameText", "extensionName"],
 
+		["pauseChoicesTitle", "popupPauseMenuTitle"],
+		["pauseChoiceDomain", "popupPauseMenuDomain"],
+		["pauseChoicePage", "popupPauseMenuPage"],
+
 		["webpageTabText", "popupWebpageTabText"],
 		["sandboxTabText", "popupSandboxTabText"],
 
 		["manualText", "popupManualConvert"],
 		["manualUsageHint", "popupManualConvertSourceText"],
+		["rememberManualOffset", "popupManualConvertRemember"],
 		["currentManualTZ", "popupCurrentlyUsedManualConversionTime"],
 		["stopManualTZ", "stop"],
 
@@ -154,6 +159,8 @@ function init() {
 	document.getElementById("sandboxConvertBtn").addEventListener("click", sandboxConvertText);
 
 	document.getElementById("pauseExtension").addEventListener("click", enableExtension);
+	const pauseChoices = document.getElementById("pauseChoices")
+
 
 	document.getElementById("optionsPage").addEventListener("click", toggleOptionsPageMode);
 
@@ -353,6 +360,8 @@ function setEnableUI(enabled, pageLoad = false) {
 		}
 	})
 
+	document.getElementById("pauseChoicesMenu").classList[enabled ? "remove" : "add"]("paused")
+
 	const pauseExtension = document.getElementById("pauseExtension")
 
 	const headerEle = document.getElementById("extensionNameText").parentNode
@@ -373,7 +382,7 @@ function setEnableUI(enabled, pageLoad = false) {
 		headerCols[0] = rootCSS.getPropertyValue('--red-rgb').split(',')
 		headerCols[1] = rootCSS.getPropertyValue('--green-rgb').split(',')
 	}
-	headerAniDir = enabled ? 1 : 0
+	headerAniDir = +enabled
 	if (!pageLoad) {
 		requestAnimationFrame(animateHeaderGradient)
 	}

@@ -70,6 +70,106 @@ h3[data-paused] {
 	background-image: linear-gradient(35deg, #525252 47.5%, #cbcbcb calc(47.5% + 1px));
 }
 
+#pauseChoices > div {
+	clip-path: path('M1.03 0a1 1 0 00-.74.3 1 1 0 000 1.4l7 7a1 1 0 001.42 0l7-7a1 1 0 000-1.4 1 1 0 00-1.42 0L8 6.58 1.7.29A1 1 0 001.04 0z');
+	width: 16px;
+	height: 9px;
+	background-color: var(--slate);
+}
+nav { flex: 0 0 auto; z-index: 9; }
+nav ul {
+	display: flex;
+	flex-direction: row;
+	list-style: none;
+	padding: 0;
+	margin: 0;
+	color: var(--text);
+	font-size: 1.25rem;
+}
+nav > ul > li {
+	display: inline-block;
+	color: var(--slate);
+	position: relative;
+	padding: 5px;
+}
+nav li {
+	display: inline-block;
+	color: var(--text);
+	position: relative;
+	white-space: nowrap;
+}
+nav li:last-child { margin-right: 0; }
+nav > ul > li > ul {
+	overflow: hidden;
+	display: block;
+	position: absolute;
+	right: -50px;
+	border-radius: 2.5px;
+	box-shadow: 2px 4px 5px rgba(0,0,0,.25);
+	min-width: 100%;
+
+	transform: scaleY(0);
+	transform-origin: top;
+	transition: transform .125s;
+	background-color: var(--slate);
+
+	min-width: 75px;
+	border: 2px solid var(--text);
+}
+nav ul li:hover ul,
+nav ul li:focus-within ul {
+	transform: scaleY(1);
+}
+nav ul ul li {
+	border-radius: 0;
+	display: block;
+	width: auto;
+	white-space: nowrap;
+}
+nav > ul > li {
+	transition: background-color .5s;
+}
+
+#pauseChoicesMenu h4 {
+	text-align: center;
+	color: var(--slate);
+	background-color: var(--text);
+	margin: 0;
+	padding: 2px 0 4px;
+	text-shadow: none;
+	font-size: small;
+	border-radius: 0;
+	text-indent: 0;
+	width: 100%;
+}
+#pauseChoicesMenu button {
+	font-size: small;
+	padding: 6px 12px;
+	--btnCol: var(--red-rgb);
+	background-color: rgba(var(--btnCol), 0);
+	color: var(--text);
+	width: 100%;
+}
+#pauseChoicesMenu button:hover,
+#pauseChoicesMenu button:focus {
+	background-color: rgba(var(--btnCol), 0.5);
+}
+#pauseChoicesMenu button:active {
+	background-color: rgba(var(--btnCol), 1);
+}
+#pauseChoicesMenu {
+	opacity: 1;
+	transition: opacity .25s ease-in-out;
+}
+#pauseChoicesMenu.paused {
+	opacity: 0;
+	pointer-events: none;
+}
+#pauseChoicesMenu.paused ul + ul {
+	display: none;
+}
+
+
 #normalContent, .tabsCont {
 	display: flex;
 	flex-direction: column;
@@ -96,6 +196,7 @@ h3[data-paused] {
 	opacity: 0;
 	background-color: var(--bg-col-hex);
 	visibility: visible;
+	width: 100%;
 }
 #optionsMode.page.visible {
 	flex: 0 1 auto;
@@ -644,5 +745,15 @@ li input {
 	#userIgnoredList div:active, #userIgnoredList div.ignored {
 		color: #f0f0f0;
 	}
-	
+	nav > ul > li > ul {
+		background-color: var(--bg-col-hex);
+	}
+	#pauseChoices button {
+		color: var(--slate);
+		--btnCol: var(--green-rgb);
+	}
+	#pauseChoices h4 {
+		color: var(--bg-col-hex);
+		background-color: var(--slate);
+	}
 }

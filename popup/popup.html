@@ -9,6 +9,18 @@
 	<body>
 		<h3><span id="extensionNameText">Localise Times</span>
 			<div>
+				<nav id="pauseChoicesMenu">
+					<ul>
+						<li id="pauseChoices">
+							<div></div>
+							<ul>
+								<li><h4 id="pauseChoicesTitle">Pause</h4></li>
+								<li><button id="pauseChoiceDomain">Website</button></li>
+								<li><button id="pauseChoicePage">Page</button></li>
+							</ul>
+						</li>
+					</ul>
+				</nav>
 				<button id="pauseExtension" class="buttonSVG" title="Pause the extension">
 					<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
 						<path d="M5 2.5L5 21.5L9.5 21.5L9.5 2.5L5 2.5M14.5 2.5L14.5 21.5L19 21.5L19 2.5L14.5 2.5">
@@ -33,7 +45,10 @@
 				<div class="tabsCont">
 					<div id="webpageMode" class="page visible">
 						<h5 id="manualText">Manually convert times missing a stated time zone</h5>
-						<span id="manualUsageHint">Please select the source time zone:</span>
+						<div style="display:flex;flex-direction:row;justify-content:space-between">
+							<span id="manualUsageHint">Please select the source time zone:</span>
+							<div style="position:relative"><label><input type="checkbox" name="rememberManualOffset" /><span id="rememberManualOffset">Remember</span></label></div>
+						</div>
 						<div id="selectOKCont">
 							<label class="selectLabel"><select id="tzList"><option value="UTC" selected>UTC (UTC+00:00)</option></select><div></div></label>
 							<button id="useSelectedTimezone"><div class="okText">OK</div></button>
