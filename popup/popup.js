@@ -759,7 +759,7 @@ function getManualTZ(tab) {
 		{ mode: "getManualTZ" },
 		(result) => {
 			manualTZ = result;
-			if (typeof manualTZ === "string") {
+			if (manualTZ && typeof manualTZ === "string") {
 				document.getElementById("currentManualTZCont").setAttribute("data-withTime", "");
 				document.getElementById("currentManualTZ").textContent = chrome.i18n.getMessage("popupCurrentlyUsedManualConversionTime", manualTZ);
 				if (currentPage === functionsCont && webpageCont.classList.contains("visible")) {

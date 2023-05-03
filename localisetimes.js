@@ -771,11 +771,11 @@ function buildLocalisedDate(timeMins, seconds = 0, fullStr = '') {
 		seconds ? seconds.substring(1) : 0
 	);
 	if (isNaN(newDate)) {
-		console.log(`Localise Times: Invlaid date time created for "${match[_G.fullStr]}"`);
+		console.log(`Localise Times: Invalid date time created for "${fullStr}"`);
 		return false
 	}
 
-	return { hm: tmpExplode, date: formatLocalisedTime(newDate,seconds) }
+	return { hm: tmpExplode, date: formatLocalisedTime(newDate, seconds) }
 }
 function m2h(mins) {
 	mins = Math.abs(mins);
@@ -817,7 +817,7 @@ function validateTime(match, str, upperTZ, usingManualTZ) {
 
 	//We need to change the start of the regex to... maybe (^|\s)
 	//The issue here is that : matches the word boundary, and if the input is "30:15 gmt" then it'll match "15 gmt"
-	if (match.index > 0) {
+	if (match.index && match.index > 0) {
 		// Avoid localising this time if the preceding character doesn't look or feel right
 		const prevChar = str.substr(match.index - 1, 1);
 		if (preceedingRegEx.test(prevChar)) { return false; }
