@@ -2,7 +2,7 @@
 
   "manifest_version": 2,
   "name": "__MSG_extensionName__",
-  "version": "1.30.3",
+  "version": "1.31.0",
 
   "description": "__MSG_extensionDescription__",
 
@@ -50,7 +50,8 @@
 
   "permissions": [
     "activeTab",
-    "storage"
+    "storage",
+    "tabs"
   ],
   
   "default_locale": "en"

@@ -55,6 +55,7 @@ const defaultSettings = {
 	avoidMatchingFloatsManually: true,
 	correctDSTconfusion: true,
 	enabled: true,
+	domainSettings: {},
 }
 
 const optionsMap = {
@@ -158,9 +159,10 @@ function init() {
 
 	document.getElementById("sandboxConvertBtn").addEventListener("click", sandboxConvertText);
 
-	document.getElementById("pauseExtension").addEventListener("click", enableExtension);
-	const pauseChoices = document.getElementById("pauseChoices")
+	document.getElementById("pauseChoiceDomain").addEventListener("click", pauseOnDomain);
+	document.getElementById("pauseChoicePage").addEventListener("click", pauseOnPage);
 
+	document.getElementById("pauseExtension").addEventListener("click", enableExtension);
 
 	document.getElementById("optionsPage").addEventListener("click", toggleOptionsPageMode);
 
@@ -230,28 +232,36 @@ function saveSettings(rebuildTZList = false) {
 function buildTZList() {
 	//Work out the DST dates for the USA as part
 	// of special casing for DST agnostic PT/ET
-	//So first we need to get those dates (We could hard code them)
-	const thisYear = new Date().getUTCFullYear();
-	let tmpDate = new Date(Date.UTC(thisYear, 2, 0));
-	//Work out the day
-	let tmpDay = (6 - tmpDate.getDay()) % 7 + 7;
-	//2am on the second Sunday in March
-	const toDST = Date.UTC(thisYear, 2, tmpDay, 2);
-	//End of DST
-	tmpDate = new Date(Date.UTC(thisYear, 10, 0));
-	//Work out the day
-	tmpDay = (6 - tmpDate.getDay()) % 7;
-	//2am on the 1st Sunday in November
-	const fromDST = Date.UTC(thisYear, 10, tmpDay, 2);
-	//
-	const tmpNow = Date.now();
-	const dstAmerica = tmpNow >= toDST && tmpNow <= fromDST;
-	//Now we need to fill in the correct offset for PT/ET
-	defaultSettings.defaults.PT = dstAmerica ? defaultTZ.PDT : defaultTZ.PST;
-	defaultSettings.defaults.ET = dstAmerica ? defaultTZ.EDT : defaultTZ.EST;
-	defaultSettings.defaults.CT = dstAmerica ? defaultTZ.CDT : defaultTZ.CST;
-	defaultSettings.defaults.MT = dstAmerica ? defaultTZ.MDT : defaultTZ.MST;
-	//
+	const thisYear = new Date().getUTCFullYear()
+
+	const tmpNow = Date.now()
+
+	const offsetInfo = [
+		{ hour: 0, short: "ET", standard: "EST", daylight: "EDT" },
+		{ hour: 1, short: "CT", standard: "CST", daylight: "CDT" },
+		{ hour: 2, short: "MT", standard: "MST", daylight: "MDT" },
+		{ hour: 3, short: "PT", standard: "PST", daylight: "PDT" },
+	]
+
+	offsetInfo.forEach(info => {
+		//Begin DST
+		//2nd Sunday in March (2am local, 7am UTC)
+		let tmpDate = new Date(Date.UTC(thisYear, 2, 0, 7 + info.hour))
+		tmpDate.setUTCMonth(2, (7 - tmpDate.getUTCDay()) + 7)
+		const toDST = tmpDate.getTime()
+
+		//End of DST
+		//1st Sunday in November (2am local, 6am UTC)
+		tmpDate = new Date(Date.UTC(thisYear, 10, 0, 6 + info.hour))
+		tmpDate.setUTCMonth(10, 7 - tmpDate.getUTCDay())
+		const fromDST = tmpDate.getTime()
+
+		const isDaylight = (tmpNow > toDST && tmpNow < fromDST)
+		const usedTimeZone =  isDaylight? info.daylight : info.standard
+		defaultSettings.defaults[info.short] = defaultSettings.defaults[usedTimeZone]
+
+	})
+
 
 	let tzListSelect = document.getElementById("tzList");
 	//tzListSelect.children[0].remove();
@@ -335,8 +345,17 @@ function clearSelectedTimezone() {
 	//window.close();
 }
 
+function pauseOnDomain() {
+}
+function pauseOnPage() {
+}
+
 function enableExtension() {
 	const enabled = !userSettings.enabled
+
+// This needs to be updated to handle unpausing
+// Where we unpause UP the options.
+// So check if we've paused this webpage, or domain, and then finally the global setting.
 
 	userSettings.enabled = enabled
 	saveSettings()
@@ -350,6 +369,11 @@ function enableExtension() {
 	setEnableUI(enabled)
 }
 function setEnableUI(enabled, pageLoad = false) {
+
+	chrome.tabs.query({ active: true, lastFocusedWindow: true }, tabs => {
+		let url = new URL(tabs[0].url);
+		console.log("hostname", url.hostname, "pathname", url.pathname)
+	});
 	const pathWord = enabled ? "icon" : "disabled"
 
 	chrome.browserAction.setIcon({

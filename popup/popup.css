@@ -704,7 +704,7 @@ li input {
 }
 
 
-.blockedHere h3 button { display: none; }
+.blockedHere h3 #headerButtons { display: none; }
 .blockedHere h3 { padding: 4.5px 2px; }
 
 .blockedHere #normalContent, #blockedHereContent {
