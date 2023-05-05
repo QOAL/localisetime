@@ -20,6 +20,8 @@ let ignoredAbbrPage;
 
 let manualTZ;
 
+let currentURL;
+
 //Stub the chrome object so you can load the webpage as a standalone for dev work
 if (!('chrome' in window)) {
 	window.chrome = {
@@ -96,11 +98,22 @@ window.addEventListener("blur", () => {
 
 function init() {
 
-	setEnableUI(userSettings.enabled, true);
+	chrome.tabs.query({ active: true, lastFocusedWindow: true }, tabs => {
+		currentURL = new URL(tabs[0].url)
+
+		const domainSettings = userSettings.domainSettings?.[currentURL.hostname]
+		const pageSettings = domainSettings?.[currentURL.pathname]
+
+		const newEnabled = ![pageSettings?.enabled, domainSettings?.enabled, userSettings.enabled].some(v => v === false)
+
+		setEnableUI(newEnabled, true)
+	})
+
+	//setEnableUI(userSettings.enabled, true);
 
 	//Localise strings
 	// [ElementID, StringName]
-	[
+	Array(
 		["extensionNameText", "extensionName"],
 
 		["pauseChoicesTitle", "popupPauseMenuTitle"],
@@ -144,7 +157,7 @@ function init() {
 		["sharedAbbrDesc", "popupSharedAbbrDesc"],
 		["ignoredAbbrDesc", "popupIgnoreAbbrDesc"],
 
-	].forEach(i => {
+	).forEach(i => {
 		document.getElementById(i[0]).textContent = chrome.i18n.getMessage(i[1]);
 	})
 	document.getElementById("sandboxTextarea").placeHolder = chrome.i18n.getMessage("popupSandboxTextarea");
@@ -346,18 +359,62 @@ function clearSelectedTimezone() {
 }
 
 function pauseOnDomain() {
+	if (!currentURL) { return }
+
+	userSettings.domainSettings[currentURL.hostname] = {
+		...(userSettings.domainSettings[currentURL.hostname] || {}),
+		enabled: false
+	}
+
+	pauseStuff({ url: currentURL.hostname + '/*' })
 }
 function pauseOnPage() {
+	if (!currentURL) { return }
+
+	userSettings.domainSettings[currentURL.hostname] = {
+		...(userSettings.domainSettings[currentURL.hostname] || {}),
+		[currentURL.pathname]: {
+			...(userSettings.domainSettings[currentURL.hostname]?.[currentURL.pathname] || {}),
+			enabled: false
+		}
+	}
+
+	pauseStuff({ url: currentURL.hostname + currentURL.pathname })
+}
+function pauseStuff(query) {
+	chrome.tabs.query({ url: currentURL.hostname + currentURL.pathname },
+		(tabs) => tabs.forEach(
+			tab => chrome.tabs.sendMessage(tab.id, { mode: "enabled", enabled: false })
+		)
+	)
+
+	chrome.storage.local.set(userSettings)
+	setEnableUI(false)
 }
 
 function enableExtension() {
-	const enabled = !userSettings.enabled
+	let enabled = true // !userSettings.enabled
 
-// This needs to be updated to handle unpausing
-// Where we unpause UP the options.
-// So check if we've paused this webpage, or domain, and then finally the global setting.
+	const domainSettings = currentURL ? userSettings.domainSettings?.[currentURL.hostname] : undefined
+	const pageSettings = currentURL ? domainSettings?.[currentURL.pathname] : undefined
 
-	userSettings.enabled = enabled
+	const isEnabled = ![pageSettings?.enabled, domainSettings?.enabled, userSettings.enabled].some(v => v === false)
+
+	if (isEnabled) {
+		enabled = false
+		userSettings.enabled = false
+	} else {
+		enabled = true
+		if (currentURL) {
+			if (pageSettings?.enabled === false) {
+				pageSettings.enabled = true
+			}
+			if (domainSettings?.enabled === false) {
+				domainSettings.enabled = true
+			}
+		}
+		userSettings.enabled = true
+	}
 	saveSettings()
 
 	chrome.tabs.query({},
@@ -370,10 +427,6 @@ function enableExtension() {
 }
 function setEnableUI(enabled, pageLoad = false) {
 
-	chrome.tabs.query({ active: true, lastFocusedWindow: true }, tabs => {
-		let url = new URL(tabs[0].url);
-		console.log("hostname", url.hostname, "pathname", url.pathname)
-	});
 	const pathWord = enabled ? "icon" : "disabled"
 
 	chrome.browserAction.setIcon({

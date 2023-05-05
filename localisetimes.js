@@ -86,6 +86,7 @@ const defaultSettings = {
 	avoidMatchingFloatsManually: true,
 	correctDSTconfusion: true,
 	enabled: true,
+	domainSettings: {},
 }
 
 let userSettings = { ...defaultSettings }
@@ -413,7 +414,7 @@ function init() {
 	workOutShortHandOffsets(); //This could be deferred until find any valid time
 
 	//Give the page a once over now it has loaded
-	if (userSettings.enabled) {
+	if (isEnabled()) {
 		lookForTimes();
 	}
 
@@ -425,6 +426,13 @@ function init() {
 	if (userSettings.enabled) {
 		observer.resume();
 	}
+}
+function isEnabled() {
+	const url = Document.location
+	const domainSettings = userSettings.domainSettings?.[url.hostname]
+	const pageSettings = domainSettings?.[url.pathname]
+
+	return ![pageSettings?.enabled, domainSettings?.enabled, userSettings.enabled].some(v => v === false)
 }
 function handleMutations(mutationsList, observer) {
 	//Disconnect so we don't trigger mutations as we localise times

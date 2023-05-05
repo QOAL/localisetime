@@ -73,18 +73,10 @@ function updateIconByDomain(tabId) {
 		return
 	}
 
-	if (userSettings.domainSettings && userSettings.domainSettings[url.hostname]) {
-		let tmpSettings
-		if (userSettings.domainSettings[url.hostname][url.pathname]) {
-			tmpSettings = userSettings.domainSettings[url.hostname][url.pathname]
-		} else {
-			tmpSettings = userSettings.domainSettings[url.hostname]
-		}
+	const domainSettings = userSettings.domainSettings?.[url.hostname]
+	const pageSettings = domainSettings?.[url.pathname]
 
-		if (Object.hasOwn(tmpSettings, "enabled") && tmpSettings.enabled === false) {
-			newEnabled = false
-		}
-	}
+	newEnabled = ![pageSettings?.enabled, domainSettings?.enabled, userSettings.enabled].some(v => v === false)
 
 	updateIcon(newEnabled)
 }
