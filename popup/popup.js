@@ -381,8 +381,8 @@ function pauseOnPage() {
 
 	pauseStuff({ url: currentURL.hostname + currentURL.pathname })
 }
-function pauseStuff(query) {
-	chrome.tabs.query({ url: currentURL.hostname + currentURL.pathname },
+function pauseStuff(query = {}) {
+	chrome.tabs.query(query,
 		(tabs) => tabs.forEach(
 			tab => chrome.tabs.sendMessage(tab.id, { mode: "enabled", enabled: false })
 		)
