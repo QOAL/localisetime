@@ -205,9 +205,6 @@ function init() {
 	buildTZList();
 	buildSandboxTZList();
 
-	normalCont.style.height = functionsCont.scrollHeight + "px";
-	normalCont.style.width = functionsCont.scrollWidth + "px";
-
 	document.getElementById("animateToPause").addEventListener("endEvent", animateToEnd)
 	document.getElementById("animateToPlay").addEventListener("endEvent", animateToEnd)
 }
