@@ -32,6 +32,7 @@ body {
 	line-height: 1.333;
 	white-space: nowrap;
 	user-select: none;
+	min-width: 380px;
 }
 
 ::selection {
