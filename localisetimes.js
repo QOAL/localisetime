@@ -112,6 +112,8 @@ function buildTimeRegex() {
 }
 
 function lookForTimes(node = document.body) {
+	if (!node) { return }
+
 	//Walk the dom looking for text nodes
 	var walker = document.createTreeWalker(node, NodeFilter.SHOW_TEXT);
 
@@ -428,7 +430,7 @@ function init() {
 	}
 }
 function isEnabled() {
-	const url = Document.location
+	const url = document.location
 	const domainSettings = userSettings.domainSettings?.[url.hostname]
 	const pageSettings = domainSettings?.[url.pathname]
 

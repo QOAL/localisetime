@@ -88,6 +88,8 @@ window.addEventListener("blur", () => {
 	chrome.tabs.query(
 		{ active: true, currentWindow: true },
 		(tabs) => {
+			if (!tabs[0]) { return }
+
 			chrome.tabs.sendMessage(
 				tabs[0].id,
 				{ mode: "settings" }
@@ -99,6 +101,8 @@ window.addEventListener("blur", () => {
 function init() {
 
 	chrome.tabs.query({ active: true, lastFocusedWindow: true }, tabs => {
+		if (!tabs[0]) { return }
+
 		currentURL = new URL(tabs[0].url)
 
 		const domainSettings = userSettings.domainSettings?.[currentURL.hostname]
@@ -324,6 +328,8 @@ function useSelectedTimezone() {
 		chrome.tabs.query(
 			{ active: true, currentWindow: true },
 			(tabs) => {
+				if (!tabs[0]) { return }
+
 				chrome.tabs.sendMessage(
 					tabs[0].id,
 					{ mode: "setManualTZ", selectedTZ: selectedTZ }
@@ -346,6 +352,8 @@ function clearSelectedTimezone() {
 	chrome.tabs.query(
 		{ active: true, currentWindow: true },
 		(tabs) => {
+			if (!tabs[0]) { return }
+
 			chrome.tabs.sendMessage(
 				tabs[0].id,
 				{ mode: "clearManualTZ" }
@@ -847,6 +855,7 @@ function getManualTZ(tab) {
 chrome.tabs.query(
 	{ active: true, currentWindow: true },
 	(tabs) => {
+		if (!tabs[0]) { return }
 		chrome.tabs.executeScript(
 			tabs[0].id,
 			{ code: '1+1;' },
