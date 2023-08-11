@@ -388,9 +388,12 @@ function pauseOnPage() {
 }
 function pauseStuff(query = {}) {
 	chrome.tabs.query(query,
-		(tabs) => tabs.forEach(
-			tab => chrome.tabs.sendMessage(tab.id, { mode: "enabled", enabled: false })
-		)
+		(tabs) => {
+			if (!tabs) { return }
+			tabs.forEach(
+				tab => chrome.tabs.sendMessage(tab.id, { mode: "enabled", enabled: false })
+			)
+		}
 	)
 
 	chrome.storage.local.set(userSettings)
@@ -460,9 +463,14 @@ function setEnableUI(enabled, pageLoad = false) {
 	pauseExtension.setAttribute("disabled","disabled")
 
 	if (headerCols[0] === false) {
-		const rootCSS = document.styleSheets[0].cssRules[0].style
-		headerCols[0] = rootCSS.getPropertyValue('--red-rgb').split(',')
-		headerCols[1] = rootCSS.getPropertyValue('--green-rgb').split(',')
+		try {
+			const rootCSS = document.styleSheets[0].cssRules[0].style
+			headerCols[0] = rootCSS.getPropertyValue('--red-rgb').split(',')
+			headerCols[1] = rootCSS.getPropertyValue('--green-rgb').split(',')
+		} catch {
+			headerCols[0] = [207, 52, 99]
+			headerCols[1] = [48, 203, 156]
+		}
 	}
 	headerAniDir = +enabled
 	if (!pageLoad) {

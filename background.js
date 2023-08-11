@@ -32,7 +32,6 @@ chrome.storage.local.get(defaultSettings, data => {
 	userSettings = { ...defaultSettings, ...data }
 
 	updateIcon(userSettings.enabled)
-
 });
 
 chrome.tabs.onActivated.addListener(function(activeInfo) {
