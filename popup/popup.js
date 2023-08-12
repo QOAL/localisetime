@@ -107,7 +107,6 @@ function init() {
 
 		const domainSettings = userSettings.domainSettings?.[currentURL.hostname]
 		const pageSettings = domainSettings?.[currentURL.pathname]
-console.log(domainSettings, pageSettings)
 
 		const newEnabled = ![pageSettings?.enabled, domainSettings?.enabled, userSettings.enabled].some(v => v === false)
 
@@ -345,13 +344,13 @@ function useSelectedTimezone() {
 
 	let query = { active: true, currentWindow: true }
 
-	if (rememberType > 0) {
+	if (rememberType > 0 && currentURL) {
 		if (rememberType === 1) {
 			setPageSetting({ manualTZ: selectedTZ });
-			query = { url: currentURL.hostname + currentURL.pathname };
+			query = { url: '*://' + currentURL.hostname + currentURL.pathname };
 		} else if (rememberType === 2) {
 			setDomainSetting({ manualTZ: selectedTZ });
-			query = { url: currentURL.hostname + '/*' };
+			query = { url: '*://' + currentURL.hostname + '/*' };
 		}
 
 		chrome.storage.local.set(userSettings);
@@ -381,17 +380,33 @@ function clearSelectedTimezone() {
 
 	manualTZ = undefined;
 
-	chrome.tabs.query(
-		{ active: true, currentWindow: true },
-		(tabs) => {
-			if (!tabs[0]) { return }
+	let query = { active: true, currentWindow: true };
 
-			chrome.tabs.sendMessage(
-				tabs[0].id,
-				{ mode: "clearManualTZ" }
-			);
+	if (currentURL) {
+		const domainSettings = userSettings.domainSettings?.[currentURL.hostname];
+		const pageSettings = domainSettings?.[currentURL.pathname];
+
+		if (pageSettings.manualTZ) {
+			query = { url: '*://' + currentURL.hostname + currentURL.pathname };
+			setPageSetting({ manualTZ: false });
+		} else if (domainSettings.manualTZ) {
+			query = { url: '*://' + urrentURL.hostname + '/*' };
+			setDomainSetting({ manualTZ: false });
 		}
-	);
+
+		chrome.storage.local.set(userSettings);
+	}
+	chrome.tabs.query(query,
+		(tabs) => {
+			if (!tabs) { return }
+			tabs.forEach(
+				tab => chrome.tabs.sendMessage(
+					tab.id,
+					{ mode: "clearManualTZ" }
+				)
+			)
+		}
+	)
 	//window.close();
 }
 
