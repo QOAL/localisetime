@@ -107,6 +107,7 @@ function init() {
 
 		const domainSettings = userSettings.domainSettings?.[currentURL.hostname]
 		const pageSettings = domainSettings?.[currentURL.pathname]
+console.log(domainSettings, pageSettings)
 
 		const newEnabled = ![pageSettings?.enabled, domainSettings?.enabled, userSettings.enabled].some(v => v === false)
 
@@ -336,23 +337,38 @@ function useSelectedTimezone() {
 	let tzList = document.getElementById("tzList");
 	let selectedTZ = tzList.options[tzList.selectedIndex].value;
 
-	console.log(+document.getElementById("rememberManualSelect").value)
-	//If the value is non-zero then we'll need to save the correct setting
-	//And update tabs on matching domains, or pages.
-
-	if (defaultTZ[selectedTZ] !== 'undefined') {
-		chrome.tabs.query(
-			{ active: true, currentWindow: true },
-			(tabs) => {
-				if (!tabs[0]) { return }
-
-				chrome.tabs.sendMessage(
-					tabs[0].id,
-					{ mode: "setManualTZ", selectedTZ: selectedTZ }
-				);
-			}
-		);
+	if (defaultTZ[selectedTZ] === 'undefined') {
+		window.close();
 	}
+
+	const rememberType = +document.getElementById("rememberManualSelect").value
+
+	let query = { active: true, currentWindow: true }
+
+	if (rememberType > 0) {
+		if (rememberType === 1) {
+			setPageSetting({ manualTZ: selectedTZ });
+			query = { url: currentURL.hostname + currentURL.pathname };
+		} else if (rememberType === 2) {
+			setDomainSetting({ manualTZ: selectedTZ });
+			query = { url: currentURL.hostname + '/*' };
+		}
+
+		chrome.storage.local.set(userSettings);
+	}
+
+	chrome.tabs.query(query,
+		(tabs) => {
+			if (!tabs) { return }
+			tabs.forEach(
+				tab => chrome.tabs.sendMessage(
+					tab.id,
+					{ mode: "setManualTZ", selectedTZ: selectedTZ }
+				)
+			)
+		}
+	)
+
 	window.close();
 }
 
@@ -379,26 +395,35 @@ function clearSelectedTimezone() {
 	//window.close();
 }
 
+
+function setDomainSetting(data) {
+	userSettings.domainSettings[currentURL.hostname] = {
+		...(userSettings.domainSettings[currentURL.hostname] || {}),
+		...data
+	}
+}
+function setPageSetting(data) {
+	userSettings.domainSettings[currentURL.hostname] = {
+		...(userSettings.domainSettings[currentURL.hostname] || {}),
+		[currentURL.pathname]: {
+			...(userSettings.domainSettings[currentURL.hostname]?.[currentURL.pathname] || {}),
+			...data
+		}
+	}
+}
+
+
 function pauseOnDomain() {
 	if (!currentURL) { return }
 
-	userSettings.domainSettings[currentURL.hostname] = {
-		...(userSettings.domainSettings[currentURL.hostname] || {}),
-		enabled: false
-	}
+	setDomainSetting({ enabled: false })
 
 	pauseStuff({ url: currentURL.hostname + '/*' })
 }
 function pauseOnPage() {
 	if (!currentURL) { return }
 
-	userSettings.domainSettings[currentURL.hostname] = {
-		...(userSettings.domainSettings[currentURL.hostname] || {}),
-		[currentURL.pathname]: {
-			...(userSettings.domainSettings[currentURL.hostname]?.[currentURL.pathname] || {}),
-			enabled: false
-		}
-	}
+	setPageSetting({ enabled: false })
 
 	pauseStuff({ url: currentURL.hostname + currentURL.pathname })
 }

@@ -79,20 +79,3 @@ function updateIconByDomain(tabId) {
 
 	updateIcon(newEnabled)
 }
-
-/*
-{
-	"qplanner.co.uk": {
-		enabled: false,
-	},
-	"qoal.co.uk": {
-		enabled: true,
-		"pies": {
-			manualTZ: "pst",
-		},
-		"milk": {
-			enabled: false,
-		}
-	}
-}
-*/

@@ -415,6 +415,8 @@ function workOutShortHandOffsets() {
 function init() {
 	workOutShortHandOffsets(); //This could be deferred until find any valid time
 
+	setPotentialManualTZ();
+
 	//Give the page a once over now it has loaded
 	if (isEnabled()) {
 		lookForTimes();
@@ -435,6 +437,17 @@ function isEnabled() {
 	const pageSettings = domainSettings?.[url.pathname]
 
 	return ![pageSettings?.enabled, domainSettings?.enabled, userSettings.enabled].some(v => v === false)
+}
+function setPotentialManualTZ() {
+	const url = document.location
+	const domainSettings = userSettings.domainSettings?.[url.hostname]
+	const pageSettings = domainSettings?.[url.pathname]
+
+	if (pageSettings.manualTZ) {
+		manualTZ = pageSettings.manualTZ
+	} else if (domainSettings.manualTZ) {
+		manualTZ = domainSettings.manualTZ
+	}
 }
 function handleMutations(mutationsList, observer) {
 	//Disconnect so we don't trigger mutations as we localise times
