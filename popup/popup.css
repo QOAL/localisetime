@@ -223,24 +223,41 @@ nav > ul > li {
 	100% { transform: translateY(0); }
 }
 
+.pageCont {
+	display: flex;
+	flex-direction: column;
+	gap: 10px;
+}
+#optionsMode .pageCont {
+	gap: 5px;
+}
+
 h5 {
-	margin: 0 0 5px 0;
+	margin: 5px 0 0 0;
 	font-weight: 600;
 }
 
-#selectOKCont, #currentManualTZCont {
+.horiItems {
 	display: flex;
 	flex-direction: row;
-	margin-top: 10px;
+	gap: 20px;
+	align-items: center;
+	justify-content: space-between;
 }
 
-#currentManualTZCont {
-	display: none;
-	justify-content: space-between;
-    align-items: center;
-}
-#currentManualTZCont[data-withTime] {
+#manualSelectCurrentCont, #manualSelect {
 	display: flex;
+	flex-direction: column;
+}
+#manualSelect {
+	gap: 10px;
+}
+#manualSelect, #manualCurrent {
+	flex: 0 0 0;
+	overflow: hidden;
+}
+#manualSelectCurrentCont:not(.withTime) #manualSelect, #manualSelectCurrentCont.withTime #manualCurrent {
+	flex: 1;
 }
 
 select {
@@ -253,7 +270,7 @@ select {
 	border-radius: 2.5px;
 	-moz-appearance: none;
 	appearance: none;
-	padding-left: 10px;
+	padding: 4px 4px 4px 10px;
 }
 select:hover, select:focus {
 	background-color: rgba(var(--red-rgb), .5);
@@ -263,7 +280,6 @@ select:active {
 }
 .selectLabel {
 	position: relative;
-	margin-right: 20px;
 	display: flex;
 	flex: 1 1 auto;
 	align-items: stretch;
@@ -297,6 +313,7 @@ button {
 	color: #f0f0f0;
 	font-weight: 600;
 	transition: all .125s;
+	align-self: flex-start;
 }
 button:focus, button:hover {
 	background-color: rgba(var(--green-rgb), .5);
@@ -412,7 +429,7 @@ textarea {
 	font-size: large;
 	width: 100%;
 	padding: 5px;
-	margin: 10px 0;
+	margin: 0 0 5px 0;
 	outline: none;
     box-sizing: border-box;
 

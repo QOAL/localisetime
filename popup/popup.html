@@ -43,26 +43,31 @@
 					<button id="sandboxTabButton" class="inactiveTab" data-target="sandboxMode"><div id="sandboxTabText">Sandbox</div></button>
 				</div>
 				<div class="tabsCont">
-					<div id="webpageMode" class="page visible">
+					<div id="webpageMode" class="pageCont page visible">
 						<h5 id="manualText">Manually convert times missing a stated time zone</h5>
-						<div style="display:flex;flex-direction:row;justify-content:space-between">
-							<span id="manualUsageHint">Please select the source time zone:</span>
-							<div style="position:relative"><label><input type="checkbox" name="rememberManualOffset" /><span id="rememberManualOffset">Remember</span></label></div>
-						</div>
-						<div id="selectOKCont">
-							<label class="selectLabel"><select id="tzList"><option value="UTC" selected>UTC (UTC+00:00)</option></select><div></div></label>
-							<button id="useSelectedTimezone"><div class="okText">OK</div></button>
-						</div>
-						<div id="currentManualTZCont">
-							<span id="currentManualTZ">Currently converting using none</span>
-							<button id="stopManualTZ">Stop</button>
+						<div id="manualSelectCurrentCont">
+							<div id="manualSelect">
+								<div class="horiItems">
+									<span id="manualUsageHint">Please select the source time zone:</span>
+									<label class="selectLabel"><select id="tzList"><option value="UTC" selected>UTC (UTC+00:00)</option></select><div></div></label>
+								</div>
+								<div id="rememberManualOffsetCont" class="horiItems">
+									<span id="rememberManualText">Use this</span>
+									<label class="selectLabel"><select id="rememberManualSelect"></select><div></div></label>
+									<button id="useSelectedTimezone"><div class="okText">OK</div></button>
+								</div>
+							</div>
+							<div id="manualCurrent" class="horiItems">
+								<span id="currentManualTZ">Currently converting using none</span>
+								<button id="stopManualTZ">Stop</button>
+							</div>
 						</div>
 					</div>
-					<div id="sandboxMode" class="page">
+					<div id="sandboxMode" class="pageCont page">
 						<h5 id="sandboxText">Time localisation sandbox</h5>
 						<textarea id="sandboxTextarea" placeholder="Enter some text here"></textarea>
 						<span id="sandboxConvertTimesTo">Convert times to:</span>
-						<div id="selectOKCont">
+						<div id="selectOKCont" class="horiItems">
 							<label class="selectLabel"><select id="tzListSandbox"><option value="UTC" selected>UTC (UTC+00:00)</option></select><div></div></label>
 							<button id="sandboxConvertBtn"><div class="okText">OK</div></button>
 						</div>
@@ -76,7 +81,7 @@
 					<button id="sharedAbbrTabButton" class="inactiveTab" data-target="sharedAbbrCont"><div id="timezonesTabText">Timezones</div></button>
 				</div>
 				<div class="tabsCont">
-					<div id="visualsCont" class="page visible">
+					<div id="visualsCont" class="pageCont page visible">
 						<h4 id="timeFormatTitle">Time format</h4>
 						<div class="columnOfInputs">
 							<label><input type="radio" name="timeFormat" value="0" checked /><span id="timeFormatSystem">System</span></label>
@@ -88,7 +93,7 @@
 							<label><input type="checkbox" name="showClock" /><span id="showClock">Include an analogue clock next to times</span></label>
 						</div>
 					</div>
-					<div id="detectionCont" class="page">
+					<div id="detectionCont" class="pageCont page">
 						<h4 id="blankSeparatorTitle">Hour/Minute Separator</h4>
 						<div class="columnOfInputs">
 							<label><input type="checkbox" name="blankSeparator" /><span id="blankSeparator">Allow times with no separator (e.g. 345pm)</span></label>
@@ -102,7 +107,7 @@
 							<label><input type="checkbox" name="correctDSTconfusion" /><span id="correctDSTconfusion">Automatically convert times with DST mix ups</span></label>
 						</div>
 					</div>
-					<div id="sharedAbbrCont" class="page">
+					<div id="sharedAbbrCont" class="pageCont page">
 						<button id="abbrPage" class="bgRedButton">
 							<div><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 9 16" width="7">
 								<path fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M1.5 14.5l6-6.5-6-6.5"/>

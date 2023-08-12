@@ -47,10 +47,26 @@
 		"description": "Manual conversion usage hint"
 	},
 
-	"popupManualConvertRemember": {
-		"message": "Remember this",
-		"description": "Remember this manual conversion on subsequent page loads"
+	"popupRememberManualText": {
+		"message": "Use this",
+		"description": "First part of the sentence used to by the user to pick whether or not this choice is saved"
 	},
+
+	"popupRememberManualTemp": {
+		"message": "Temporarily",
+		"description": "Last part of the sentence. This is the users choice"
+	},
+
+	"popupRememberManualPage": {
+		"message": "Always on this page",
+		"description": "Last part of the sentence. This is the users choice"
+	},
+
+	"popupRememberManualWebsite": {
+		"message": "Always on this website",
+		"description": "Last part of the sentence. This is the users choice"
+	},
+
 
 	"OK": {
 		"message": "OK",

@@ -129,7 +129,7 @@ function init() {
 
 		["manualText", "popupManualConvert"],
 		["manualUsageHint", "popupManualConvertSourceText"],
-		["rememberManualOffset", "popupManualConvertRemember"],
+		["rememberManualText", "popupRememberManualText"],
 		["currentManualTZ", "popupCurrentlyUsedManualConversionTime"],
 		["stopManualTZ", "stop"],
 
@@ -167,6 +167,18 @@ function init() {
 	document.getElementById("sandboxTextarea").placeHolder = chrome.i18n.getMessage("popupSandboxTextarea");
 	document.getElementById("optionsPage").title = chrome.i18n.getMessage("popupOptions");
 	document.querySelectorAll(".okText").forEach(ele => ele.textContent = chrome.i18n.getMessage("OK"));
+
+	const manualRememberOptions = Array(
+		"popupRememberManualTemp",
+		"popupRememberManualPage",
+		"popupRememberManualWebsite"
+	).map((o, oI) => {
+		const listEntry = document.createElement("option");
+		listEntry.textContent = chrome.i18n.getMessage(o);
+		listEntry.value = oI;
+		return listEntry;
+	})
+	document.getElementById("rememberManualSelect").replaceChildren(...manualRememberOptions)
 
 	document.getElementById("webpageTabButton").addEventListener("click", changeTab);
 	document.getElementById("sandboxTabButton").addEventListener("click", changeTab);
@@ -324,6 +336,10 @@ function useSelectedTimezone() {
 	let tzList = document.getElementById("tzList");
 	let selectedTZ = tzList.options[tzList.selectedIndex].value;
 
+	console.log(+document.getElementById("rememberManualSelect").value)
+	//If the value is non-zero then we'll need to save the correct setting
+	//And update tabs on matching domains, or pages.
+
 	if (defaultTZ[selectedTZ] !== 'undefined') {
 		chrome.tabs.query(
 			{ active: true, currentWindow: true },
@@ -341,9 +357,9 @@ function useSelectedTimezone() {
 }
 
 function clearSelectedTimezone() {
-	const clearManualUI = document.getElementById("currentManualTZCont")
-	if (clearManualUI.hasAttribute("data-withTime")) {
-		clearManualUI.removeAttribute("data-withTime")
+	const manualSelectCurrentCont = document.getElementById("manualSelectCurrentCont")
+	if (manualSelectCurrentCont.classList.contains("withTime")) {
+		manualSelectCurrentCont.classList.remove("withTime")
 		normalCont.style.height = functionsCont.scrollHeight + "px";
 	}
 
@@ -848,11 +864,12 @@ function getManualTZ(tab) {
 		tab.id,
 		{ mode: "getManualTZ" },
 		(result) => {
-			manualTZ = result;
-			if (manualTZ && typeof manualTZ === "string") {
-				document.getElementById("currentManualTZCont").setAttribute("data-withTime", "");
-				document.getElementById("currentManualTZ").textContent = chrome.i18n.getMessage("popupCurrentlyUsedManualConversionTime", manualTZ);
-				if (currentPage === functionsCont && webpageCont.classList.contains("visible")) {
+			if (result) {
+				manualTZ = result;
+				document.getElementById("manualSelectCurrentCont").classList.add("withTime");
+				//Firefox likes to randomly return "null" as the substituted text, I cannot figure out why.
+				document.getElementById("currentManualTZ").textContent = chrome.i18n.getMessage("popupCurrentlyUsedManualConversionTime", result);
+				if (currentPage === functionsCont && webpageCont && webpageCont.classList.contains("visible")) {
 					normalCont.style.height = functionsCont.scrollHeight + "px";
 				}
 			}
