@@ -443,9 +443,9 @@ function setPotentialManualTZ() {
 	const domainSettings = userSettings.domainSettings?.[url.hostname]
 	const pageSettings = domainSettings?.[url.pathname]
 
-	if (pageSettings.manualTZ) {
+	if (pageSettings?.manualTZ) {
 		manualTZ = pageSettings.manualTZ
-	} else if (domainSettings.manualTZ) {
+	} else if (domainSettings?.manualTZ) {
 		manualTZ = domainSettings.manualTZ
 	}
 }
