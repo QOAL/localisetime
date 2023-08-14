@@ -9,8 +9,6 @@ let userSettings = { ...defaultSettings }
 
 let activeTab = -1
 
-const tabUrls = {}
-
 const icons = [
 	{
 		path: {
@@ -28,25 +26,29 @@ const icons = [
 	}
 ]
 
+const manifestVersion = chrome.runtime.getManifest().manifest_version
+const actionName = manifestVersion === 2 ? "browserAction" : "action"
+
 chrome.storage.local.get(defaultSettings, data => {
 	userSettings = { ...defaultSettings, ...data }
 
 	updateIcon(userSettings.enabled)
 });
 
-chrome.tabs.onActivated.addListener(function(activeInfo) {
+chrome.tabs.onActivated.addListener(activeInfo => {
 	activeTab = activeInfo.tabId
 
-	updateIconByDomain(activeTab)
+	chrome.tabs.get(activeInfo.tabId, tab => {
+		updateIconByDomain(new URL(tab.url))
+	})
+
 });
 
 chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
 	if (!changeInfo || !changeInfo.url) { return }
 
-	tabUrls[tabId] = new URL(changeInfo.url)
-
 	if (activeTab === tabId) {
-		updateIconByDomain(activeTab)
+		updateIconByDomain(new URL(changeInfo.url))
 	}
 })
 
@@ -60,22 +62,14 @@ chrome.storage.onChanged.addListener((changes, areaName) => {
 })
 
 function updateIcon(enabled) {
-	chrome.browserAction.setIcon(icons[+enabled])
+	chrome[actionName].setIcon(icons[+enabled])
 }
 
-function updateIconByDomain(tabId) {
-	let newEnabled = userSettings.enabled ?? true
-
-	let url = tabUrls[tabId]
-	if (!url) {
-		updateIcon(newEnabled)
-		return
-	}
-
+function updateIconByDomain(url) {
 	const domainSettings = userSettings.domainSettings?.[url.hostname]
 	const pageSettings = domainSettings?.[url.pathname]
 
-	newEnabled = ![pageSettings?.enabled, domainSettings?.enabled, userSettings.enabled].some(v => v === false)
+	const newEnabled = ![pageSettings?.enabled, domainSettings?.enabled, userSettings.enabled].some(v => v === false)
 
 	updateIcon(newEnabled)
 }

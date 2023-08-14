@@ -34,7 +34,8 @@ if (!('chrome' in window)) {
 			executeScript: i=>i
 		},
 		runtime: {
-			lastError: false
+			lastError: false,
+			getManifest: ()=>2
 		},
 		storage: {
 			local: {
@@ -44,9 +45,15 @@ if (!('chrome' in window)) {
 		},
 		browserAction: {
 			setIcon: ()=>{}
+		},
+		action: {
+			setIcon: ()=>{}
 		}
 	}
 }
+
+const manifestVersion = chrome.runtime.getManifest().manifest_version
+const actionName = manifestVersion === 2 ? "browserAction" : "action"
 
 const defaultSettings = {
 	defaults: { ...defaultTZ },
@@ -493,7 +500,7 @@ function setEnableUI(enabled, pageLoad = false) {
 
 	const pathWord = enabled ? "icon" : "disabled"
 
-	chrome.browserAction.setIcon({
+	chrome[actionName].setIcon({
 		path: {
 			16: `../icons/${pathWord}_16.png`,
 			32: `../icons/${pathWord}_32.png`,
@@ -917,21 +924,25 @@ function getManualTZ(tab) {
 	);
 }
 
+function blockedHere() {
+	document.getElementById("blockedHereContent").textContent = chrome.i18n.getMessage("popupUnableToFunction");
+	document.body.setAttribute("class", "blockedHere");
+}
+
 chrome.tabs.query(
 	{ active: true, currentWindow: true },
 	(tabs) => {
-		if (!tabs[0]) { return }
-		chrome.tabs.executeScript(
+		if (!tabs[0]) { blockedHere(); }
+		chrome.tabs.sendMessage(
 			tabs[0].id,
-			{ code: '1+1;' },
+			{ mode: "ping" },
 			(result) => {
-				if (chrome.runtime.lastError || !result || (Array.isArray(result) && result[0] === undefined)) {
-					document.getElementById("blockedHereContent").textContent = chrome.i18n.getMessage("popupUnableToFunction");
-					document.body.setAttribute("class", "blockedHere");
+				if (chrome.runtime.lastError) {
+					blockedHere();
 				} else {
-					getManualTZ(tabs[0])
+					getManualTZ(tabs[0]);
 				}
 			}
-		);
+		)
 	}
-);
+)

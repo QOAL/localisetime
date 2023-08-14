@@ -497,6 +497,10 @@ function contentMessageListener(request, sender, sendResponse) {
 	if (!request.hasOwnProperty('mode')) { return }
 
 	switch (request.mode) {
+		case 'ping':
+			sendResponse('pong');
+			break;
+
 		case 'setManualTZ':
 			manualTZ = request.selectedTZ;
 			observer.disconnect();
