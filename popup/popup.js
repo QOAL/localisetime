@@ -440,14 +440,14 @@ function pauseOnDomain() {
 
 	setDomainSetting({ enabled: false })
 
-	pauseStuff({ url: currentURL.hostname + '/*' })
+	pauseStuff({ url: '*://' + currentURL.hostname + '/*' })
 }
 function pauseOnPage() {
 	if (!currentURL) { return }
 
 	setPageSetting({ enabled: false })
 
-	pauseStuff({ url: currentURL.hostname + currentURL.pathname })
+	pauseStuff({ url: '*://' + currentURL.hostname + currentURL.pathname })
 }
 function pauseStuff(query = {}) {
 	chrome.tabs.query(query,
