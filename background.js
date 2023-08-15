@@ -33,16 +33,17 @@ chrome.storage.local.get(defaultSettings, data => {
 	userSettings = { ...defaultSettings, ...data }
 
 	updateIcon(userSettings.enabled)
-});
+})
 
 chrome.tabs.onActivated.addListener(activeInfo => {
 	activeTab = activeInfo.tabId
 
 	chrome.tabs.get(activeInfo.tabId, tab => {
+		if (!tab || !tab.url) { return }
 		updateIconByDomain(new URL(tab.url))
 	})
 
-});
+})
 
 chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
 	if (!changeInfo || !changeInfo.url) { return }
@@ -52,13 +53,12 @@ chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
 	}
 })
 
-
 chrome.storage.onChanged.addListener((changes, areaName) => {
 	if (areaName !== "local") { return }
 
 	chrome.storage.local.get(defaultSettings, data => {
 		userSettings = { ...defaultSettings, ...data }
-	});
+	})
 })
 
 function updateIcon(enabled) {
