@@ -393,10 +393,10 @@ function clearSelectedTimezone() {
 		const domainSettings = userSettings.domainSettings?.[currentURL.hostname];
 		const pageSettings = domainSettings?.[currentURL.pathname];
 
-		if (pageSettings.manualTZ) {
+		if (pageSettings?.manualTZ) {
 			query = { url: '*://' + currentURL.hostname + currentURL.pathname };
 			setPageSetting({ manualTZ: false });
-		} else if (domainSettings.manualTZ) {
+		} else if (domainSettings?.manualTZ) {
 			query = { url: '*://' + urrentURL.hostname + '/*' };
 			setDomainSetting({ manualTZ: false });
 		}
