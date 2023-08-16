@@ -397,7 +397,7 @@ function clearSelectedTimezone() {
 			query = { url: '*://' + currentURL.hostname + currentURL.pathname };
 			setPageSetting({ manualTZ: false });
 		} else if (domainSettings?.manualTZ) {
-			query = { url: '*://' + urrentURL.hostname + '/*' };
+			query = { url: '*://' + currentURL.hostname + '/*' };
 			setDomainSetting({ manualTZ: false });
 		}
 

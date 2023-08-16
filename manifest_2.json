@@ -2,7 +2,7 @@
 
   "manifest_version": 2,
   "name": "__MSG_extensionName__",
-  "version": "1.40.1",
+  "version": "1.40.2",
 
   "description": "__MSG_extensionDescription__",
 
