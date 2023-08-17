@@ -2,7 +2,7 @@
 
   "manifest_version": 3,
   "name": "__MSG_extensionName__",
-  "version": "1.40.2",
+  "version": "1.40.3",
 
   "description": "__MSG_extensionDescription__",
 
@@ -51,7 +51,8 @@
   "permissions": [
     "activeTab",
     "storage",
-    "tabs"
+    "tabs",
+    "scripting"
   ],
 
   "host_permissions": [

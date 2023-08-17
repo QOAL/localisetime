@@ -476,6 +476,7 @@ function enableExtension() {
 		userSettings.enabled = false
 	} else {
 		enabled = true
+		userSettings.enabled = true
 		if (currentURL) {
 			if (pageSettings?.enabled === false) {
 				pageSettings.enabled = true
@@ -484,18 +485,22 @@ function enableExtension() {
 				domainSettings.enabled = true
 			}
 		}
-		userSettings.enabled = true
 	}
 	saveSettings()
 
-	chrome.tabs.query({},
-		(tabs) => tabs.forEach(
-			tab => chrome.tabs.sendMessage(tab.id, { mode: "enabled", enabled: enabled })
-		)
-	)
+	chrome.tabs.query(
+		{ active: true, currentWindow: true },
+		(tabs) => {
+			chrome.tabs.sendMessage(
+				tabs[0].id,
+				{ mode: "enabled", enabled: enabled }
+			)
+		}
+	);
 
 	setEnableUI(enabled)
 }
+
 function setEnableUI(enabled, pageLoad = false) {
 
 	const pathWord = enabled ? "icon" : "disabled"
