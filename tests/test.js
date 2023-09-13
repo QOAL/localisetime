@@ -46,7 +46,7 @@ function patchWebExt(input, tzInfo) {
 	let output
 
 	//Remove some unnecessary function calls
-	output = input.replace(/lookForTimes\(\);[\S\s]*function handleMutations/, "}}\nfunction handleMutations")
+	output = input.replace(/lookForTimes\(\);[\S\s]*function handleMutations/, "}}\nfunction isEnabled(){}\nfunction setPotentialManualTZ(){}\nfunction handleMutations")
 
 	//Comment out the listener used by the web extension
 	output = output.replace("chrome.runtime.onMessage", "//chrome.runtime.onMessage")
