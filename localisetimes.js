@@ -82,6 +82,7 @@ const defaultSettings = {
 	ignored: [],
 	timeFormat: 0,
 	includeClock: true,
+	showOriginalText: false,
 	blankSeparator: true,
 	avoidMatchingFloatsManually: true,
 	correctDSTconfusion: true,
@@ -164,16 +165,24 @@ function lookForTimes(node = document.body) {
 			let tmpTime = document.createElement("localisetime");
 			tmpTime.setAttribute("class", "localiseTime");
 			if (userSettings.includeClock) {
-				tmpTime.appendChild(newClockElement(...thisTime.svgTimes));
+				tmpTime.appendChild(newClockElement(...thisTime.svgTimes[userSettings.showOriginalText ? 0 : 1]));
 			}
+
+			const fullTimeStr = thisTime.fullStr + (thisTime.usingManualTZ ? ' ' + manualTZ : '')
 
 			//tmpTime.style.cursor = "pointer"; //Indicate that it's interactive
 			//tmpTime.style.borderBottom = "1px dotted currentColor"; //Modest styling that should fit in with any content
 			let tmpTimeText = document.createElement("span");
-			tmpTimeText.textContent = thisTime.localisedTime;
+			tmpTimeText.textContent = userSettings.showOriginalText ? fullTimeStr : thisTime.localisedTime;
 			tmpTime.appendChild(tmpTimeText); //Our converted time
 			//Let people mouse over the converted time to see what was actually written
-			tmpTime.setAttribute("data-tooltip", chrome.i18n.getMessage("tooltipConverted", thisTime.fullStr + (thisTime.usingManualTZ ? ' ' + manualTZ : '')));
+			tmpTime.setAttribute("data-tooltip",
+				userSettings.showOriginalText ?
+				chrome.i18n.getMessage("tooltipUnconverted", thisTime.localisedTime) :
+				chrome.i18n.getMessage("tooltipConverted", fullTimeStr)
+			);
+
+			tmpTime.setAttribute("data-svgtimes", JSON.stringify(thisTime.svgTimes)); //Times shown on the clock faces
 			tmpTime.setAttribute("tabIndex", 0); //Allow keyboard interactions
 			tmpTime.setAttribute("data-localised", thisTime.localisedTime); //Used when toggling
 			tmpTime.setAttribute("data-original", thisTime.fullStr); //Used when toggling
@@ -237,6 +246,7 @@ function lookForTextTimes(node, timeInfo) {
 	}
 
 	if (timeInfo.length === 0) { return }
+	if (userSettings.showOriginalText) { return }
 
 	//We use detection of a clock to help prevent these times from being localised more than once
 	// So currently we are not obeying userSettings.includeClock
@@ -250,7 +260,7 @@ function lookForTextTimes(node, timeInfo) {
 	let newTextContent = node.textContent.substr(0, timeInfo[0].matchPos);
 
 	timeInfo.forEach((thisTime, t) => {
-		newTextContent += emojiClock(thisTime.svgTimes[0], thisTime.svgTimes[1]) +
+		newTextContent += emojiClock(thisTime.svgTimes[1][0], thisTime.svgTimes[1][1]) +
 			thisTime.localisedTime +
 			node.textContent.substring(
 				thisTime.matchPos + thisTime.fullStr.length,
@@ -283,6 +293,7 @@ function toggleTime(e) {
 	}
 
 	let newTTT = "";
+	let clockIndex = 0;
 
 	//Which state are we in?
 	if (this.getAttribute("data-original") == this.lastChild.textContent) {
@@ -292,10 +303,14 @@ function toggleTime(e) {
 		}
 		this.lastChild.textContent = this.getAttribute("data-localised");
 		newTTT = chrome.i18n.getMessage("tooltipConverted", this.getAttribute("data-original") + manualTZStr);
+		clockIndex = 1;
 	} else {
 		this.lastChild.textContent = this.getAttribute("data-original");
 		newTTT = chrome.i18n.getMessage("tooltipUnconverted", this.getAttribute("data-localised"));
 	}
+
+	const svgTimes = JSON.parse(this.getAttribute("data-svgtimes"));
+	updateClockPath(this.children[0].children[0].children[1], ...svgTimes[clockIndex]);
 
 	this.setAttribute("data-tooltip", newTTT);
 	if (tooltipEle) { tooltipEle.textContent = newTTT };
@@ -697,7 +712,7 @@ function spotTime(str, correctedOffset) {
 		if (!lTime) { continue; }
 		let localeTimeString = lTime.date;
 
-		let SVGTimes = lTime.hm;
+		let SVGTimes = [[tHour, tMins], lTime.hm];
 
 		let localeStartTimeString = '';
 
@@ -759,7 +774,7 @@ function spotTime(str, correctedOffset) {
 			localeStartTimeString = lSTime.date + " " + timeSeparator + " ";//' – ';
 			//Should we capture the user defined separator and reuse it? - Yes, and we are now.
 
-			SVGTimes = lSTime.hm;
+			SVGTimes = [[startHour, startMins], lSTime.hm];
 
 			if (hasDSTConfusion) {
 				const cSTime = buildLocalisedDate(
@@ -922,14 +937,20 @@ function buildClockElement() {
 function newClockElement(inHours = 4, inMinutes = 0, inSeconds = 0) {
 	const newClock = buildClockElement();
 
+	newClock.children[0].children[1].setAttribute("d", calculateClockPath(inHours, inMinutes, inSeconds));
+
+	return newClock;
+}
+
+function updateClockPath(ele, inHours = 4, inMinutes = 0, inSeconds = 0) {
+	ele.setAttribute("d", calculateClockPath(inHours, inMinutes, inSeconds));
+}
+
+function calculateClockPath(inHours = 4, inMinutes = 0, inSeconds = 0) {
 	const hour = ((inHours % 12) * Math.PI / 6) + (inMinutes * Math.PI / (6 * 60)) + (inSeconds * Math.PI / (360 * 60)) - (Math.PI / 2);
 	const minute = (inMinutes * Math.PI / 30) + (inSeconds * Math.PI / (30 * 60)) - (Math.PI / 2);
 
-	const newPath = `M${Math.cos(hour) * 3 + 8} ${Math.sin(hour) * 3 + 8}L8 8L${Math.cos(minute) * 5 + 8} ${Math.sin(minute) * 5 + 8}`;
-
-	newClock.children[0].children[1].setAttribute("d", newPath);
-
-	return newClock;
+	return `M${Math.cos(hour) * 3 + 8} ${Math.sin(hour) * 3 + 8}L8 8L${Math.cos(minute) * 5 + 8} ${Math.sin(minute) * 5 + 8}`;
 }
 
 function onRemove(element, onDetachCallback) {

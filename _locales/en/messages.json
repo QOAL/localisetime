@@ -177,6 +177,12 @@
 	},
 
 
+	"popupShowOriginalText": {
+		"message": "Show the original text initially",
+		"description": "Setting this option will display the unmodified text initially, and the user will have to click or hover over the time to see the localisation"
+	},
+
+
 	"popupBlankSeparatorTitle": {
 		"message": "Hour/Minute Separator",
 		"description": "Title of the blank hour/minute separator option"

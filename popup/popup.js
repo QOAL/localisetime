@@ -60,6 +60,7 @@ const defaultSettings = {
 	ignored: [],
 	timeFormat: 0,
 	includeClock: true,
+	showOriginalText: false,
 	blankSeparator: true,
 	avoidMatchingFloatsManually: true,
 	correctDSTconfusion: true,
@@ -69,6 +70,7 @@ const defaultSettings = {
 
 const optionsMap = {
 	showClock: "includeClock",
+	showOriginalText: "showOriginalText",
 	blankSeparator: "blankSeparator",
 	avoidManualFloats: "avoidMatchingFloatsManually",
 	correctDSTconfusion: "correctDSTconfusion",
@@ -155,6 +157,7 @@ function init() {
 		["displayOptionsTitle", "popupDisplayOptions"],
 
 		["showClock", "popupShowClock"],
+		["showOriginalText", "popupShowOriginalText"],
 
 		["blankSeparatorTitle", "popupBlankSeparatorTitle"],
 		["blankSeparator", "popupBlankSeparatorDescription"],
@@ -208,6 +211,7 @@ function init() {
 
 	document.getElementsByName("timeFormat").forEach(tF => tF.addEventListener("change", updateTimeFormatSetting));
 	document.getElementsByName("showClock")[0].addEventListener("change", updateSetting);
+	document.getElementsByName("showOriginalText")[0].addEventListener("change", updateSetting);
 	document.getElementsByName("blankSeparator")[0].addEventListener("change", updateSetting);
 	document.getElementsByName("avoidManualFloats")[0].addEventListener("change", updateSetting);
 	document.getElementsByName("correctDSTconfusion")[0].addEventListener("change", updateSetting);
@@ -702,6 +706,7 @@ function toggleOptionsPageMode() {
 		document.getElementsByName("timeFormat")[userSettings.timeFormat].checked = true;
 
 		document.getElementsByName("showClock")[0].checked = userSettings.includeClock;
+		document.getElementsByName("showOriginalText")[0].checked = userSettings.showOriginalText;
 
 		document.getElementsByName("blankSeparator")[0].checked = userSettings.blankSeparator;
 
