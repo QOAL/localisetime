@@ -17,7 +17,10 @@
 ::-webkit-scrollbar { background-color: var(--dark-border); width: 8px; }
 ::-webkit-scrollbar-thumb { background-color: currentColor; }
 
-html { overflow: hidden; scrollbar-width: none; }
+html {
+	overflow: hidden;
+	scrollbar-width: none;
+}
 
 body {
 	margin: 0px !important;
@@ -730,6 +733,14 @@ li input {
 }
 .blockedHere #blockedHereContent {
 	display: block;
+}
+
+.optionsUI {
+	min-height: 100vh;
+}
+.optionsUI #pauseChoicesMenu,
+.optionsUI #optionsPage {
+	display: none;
 }
 
 @media (prefers-color-scheme: light) {

@@ -2,7 +2,7 @@
 
   "manifest_version": 3,
   "name": "__MSG_extensionName__",
-  "version": "1.40.4",
+  "version": "1.40.5",
 
   "description": "__MSG_extensionDescription__",
 
@@ -46,6 +46,10 @@
 
   "background": {
     "service_worker": "background.js"
+  },
+
+  "options_ui": {
+    "page": "popup/popup.html"
   },
 
   "permissions": [

@@ -22,6 +22,8 @@ let manualTZ;
 
 let currentURL;
 
+let isLikelyOptionsUI = false;
+
 //Stub the chrome object so you can load the webpage as a standalone for dev work
 if (!('chrome' in window)) {
 	window.chrome = {
@@ -234,6 +236,12 @@ function init() {
 
 	document.getElementById("animateToPause").addEventListener("endEvent", animateToEnd)
 	document.getElementById("animateToPlay").addEventListener("endEvent", animateToEnd)
+
+	if (isLikelyOptionsUI) {
+		toggleOptionsPageMode();
+
+		document.body.setAttribute("class", "optionsUI");
+	}
 }
 
 function updateSetting() {
@@ -942,7 +950,17 @@ function blockedHere() {
 chrome.tabs.query(
 	{ active: true, currentWindow: true },
 	(tabs) => {
-		if (!tabs[0]) { blockedHere(); }
+
+		const views = chrome.extension.getViews({ type: 'popup' });
+		const isPopup = views.some(view => view === window);
+
+		if (isPopup && !tabs[0]) { blockedHere(); }
+
+		if (!isPopup) {
+			isLikelyOptionsUI = true;
+			return
+		}
+
 		chrome.tabs.sendMessage(
 			tabs[0].id,
 			{ mode: "ping" },
