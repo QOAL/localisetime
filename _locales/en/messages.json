@@ -183,6 +183,12 @@
 	},
 
 
+	"popupIncludeTZInLocalised": {
+		"message": "Include timezones in localised times",
+		"description": "Setting this option will include the users local timezone, or a GMT/UTC + offset fallback, in all localised times"
+	},
+
+
 	"popupBlankSeparatorTitle": {
 		"message": "Hour/Minute Separator",
 		"description": "Title of the blank hour/minute separator option"

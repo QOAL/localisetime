@@ -66,6 +66,7 @@ const defaultSettings = {
 	blankSeparator: true,
 	avoidMatchingFloatsManually: true,
 	correctDSTconfusion: true,
+	includeTZInLocalised: false,
 	enabled: true,
 	domainSettings: {},
 }
@@ -76,6 +77,7 @@ const optionsMap = {
 	blankSeparator: "blankSeparator",
 	avoidManualFloats: "avoidMatchingFloatsManually",
 	correctDSTconfusion: "correctDSTconfusion",
+	includeTZInLocalised: "includeTZInLocalised",
 }
 
 let userSettings = { ...defaultSettings }
@@ -160,6 +162,7 @@ function init() {
 
 		["showClock", "popupShowClock"],
 		["showOriginalText", "popupShowOriginalText"],
+		["includeTZInLocalised", "popupIncludeTZInLocalised"],
 
 		["blankSeparatorTitle", "popupBlankSeparatorTitle"],
 		["blankSeparator", "popupBlankSeparatorDescription"],
@@ -214,9 +217,11 @@ function init() {
 	document.getElementsByName("timeFormat").forEach(tF => tF.addEventListener("change", updateTimeFormatSetting));
 	document.getElementsByName("showClock")[0].addEventListener("change", updateSetting);
 	document.getElementsByName("showOriginalText")[0].addEventListener("change", updateSetting);
+	document.getElementsByName("includeTZInLocalised")[0].addEventListener("change", updateSetting);
 	document.getElementsByName("blankSeparator")[0].addEventListener("change", updateSetting);
 	document.getElementsByName("avoidManualFloats")[0].addEventListener("change", updateSetting);
 	document.getElementsByName("correctDSTconfusion")[0].addEventListener("change", updateSetting);
+
 	document.getElementById("abbrPage").addEventListener("click", toggleAbbrPage);
 
 	normalCont = document.getElementById("normalContent");
@@ -715,6 +720,7 @@ function toggleOptionsPageMode() {
 
 		document.getElementsByName("showClock")[0].checked = userSettings.includeClock;
 		document.getElementsByName("showOriginalText")[0].checked = userSettings.showOriginalText;
+		document.getElementsByName("includeTZInLocalised")[0].checked = userSettings.includeTZInLocalised;
 
 		document.getElementsByName("blankSeparator")[0].checked = userSettings.blankSeparator;
 

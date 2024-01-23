@@ -63,9 +63,9 @@ function patchWebExt(input, tzInfo) {
 
 	//Force the local timezone to BST (GMT + 1)
 	//This makes the test results consistent regardless of where you live
-	let matches = output.matchAll(/{( )hour:/g)
+	let matches = output.matchAll(/numeric', minute/g)
 	for (const match of matches) {
-		output = output.replace(match[0], `{ timeZone: testTimezone, hour:`)
+		output = output.replace(match[0], `numeric', timeZone: testTimezone, minute`)
 	}
 	//Fake the timezone offset.
 	output = output.replace(/dateObj.getTimezoneOffset\(\);/g, "0;")

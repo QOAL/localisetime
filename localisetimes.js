@@ -86,6 +86,7 @@ const defaultSettings = {
 	blankSeparator: true,
 	avoidMatchingFloatsManually: true,
 	correctDSTconfusion: true,
+	includeTZInLocalised: false,
 	enabled: true,
 	domainSettings: {},
 }
@@ -541,9 +542,18 @@ function contentMessageListener(request, sender, sendResponse) {
 		case 'settings':
 			//Reloads the users settings, to reflect any changes made.
 			chrome.storage.local.get(defaultSettings, data => {
+
+				const oldIncludeTZInLocalised = userSettings.includeTZInLocalised;
+
 				userSettings = { defaults: { ...defaultSettings.defaults }, ...data };
+
 				buildTimeRegex();
 				workOutShortHandOffsets();
+
+				if (oldIncludeTZInLocalised !== userSettings.includeTZInLocalised) {
+					dateTimeFormats = Array(2);
+				}
+
 			});
 			break;
 
@@ -830,12 +840,21 @@ function h2m(hours, mins) {
 }
 
 const hour12 = [{}, { hour12: true }, { hour12: false }]
+const incTZ = [{}, { timeZoneName: 'short' }]
 function formatLocalisedTime(tmpDate, withSeconds) {
 	// Lazily create the DateTimeFormat object that we need
 	if (withSeconds && !dateTimeFormats[1]) {
-		dateTimeFormats[1] = new Intl.DateTimeFormat(undefined, { hour: 'numeric', minute: 'numeric', second: 'numeric', ...hour12[userSettings.timeFormat] });
+		dateTimeFormats[1] = new Intl.DateTimeFormat(undefined, {
+			hour: 'numeric', minute: 'numeric', second: 'numeric',
+			...hour12[userSettings.timeFormat],
+			...incTZ[userSettings.includeTZInLocalised & 1]
+		});
 	} else if (!dateTimeFormats[0]) {
-		dateTimeFormats[0] = new Intl.DateTimeFormat(undefined, { hour: 'numeric', minute: 'numeric', ...hour12[userSettings.timeFormat] });
+		dateTimeFormats[0] = new Intl.DateTimeFormat(undefined, {
+			hour: 'numeric', minute: 'numeric',
+			...hour12[userSettings.timeFormat],
+			...incTZ[userSettings.includeTZInLocalised & 1]
+		});
 	}
 	// Match the granularity of the output to the input
 	return dateTimeFormats[withSeconds ? 1 : 0].format(tmpDate)	
