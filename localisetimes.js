@@ -5,7 +5,9 @@ let observer;
 let dateTimeFormats = Array(2);
 
 const shortHandInfo = {"PT": "Pacific Time", "ET": "Eastern Time", "CT": "Central Time", "MT": "Mountain Time"};
-const dstAlertMap = {}
+const shortHandCodes = Object.keys(shortHandInfo);
+const dstAlertMap = {};
+let haveCalculatedShortCodes = false;
 
 const fullTitleRegEx = "[a-z \-'áéí–-]{3,45}?(?= time) time";
 
@@ -426,11 +428,11 @@ function workOutShortHandOffsets() {
 		dstAlertMap[!isDaylight ? info.daylight : info.standard] = usedTimeZone
 
 	})
+
+	haveCalculatedShortCodes = true;
 }
 
 function init() {
-	workOutShortHandOffsets(); //This could be deferred until find any valid time
-
 	setPotentialManualTZ();
 
 	//Give the page a once over now it has loaded
@@ -619,6 +621,10 @@ function spotTime(str, correctedOffset) {
 			usingManualTZ = true;
 		} else {
 			continue;
+		}
+
+		if (shortHandCodes.includes(upperTZ) && !haveCalculatedShortCodes) {
+			workOutShortHandOffsets();
 		}
 
 		//If a detected timezone abbreviation includes a space, then we've actually found a full name
