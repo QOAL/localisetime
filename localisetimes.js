@@ -639,6 +639,9 @@ function spotTime(str, correctedOffset) {
 				if (shortHandInfo[shK].toLowerCase() === lcTZAbr) {
 					match[_G.tzAbr] = shK;
 					upperTZ = shK;
+					if (!haveCalculatedShortCodes) {
+						workOutShortHandOffsets();
+					}
 					return true;
 				}
 			})
