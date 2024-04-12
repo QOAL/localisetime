@@ -109,10 +109,12 @@ function buildTimeRegex() {
 	const tzaolStr = Object.keys(userSettings.defaults).join("|") + "|" + fullTitleRegEx;
 	//13% faster, but causes issues when manually converting
 	//[a-z]{2,5}|' + fullTitleRegEx + '
-	timeRegex = new RegExp('\\b(?:([01]?[0-9]|2[0-3])(:|\\.)?([0-5][0-9])?(:[0-5][0-9])?(?: ?([ap]\\.?m?\\.?))?( ?)(to|until|til|and|or|[-\u2010-\u2015])\\6)?([01]?[0-9]|2[0-3])(:|\\.)?([0-5][0-9])?(:[0-5][0-9])?(?: ?([ap]\\.?m?\\.?)(?= \\w|\\b))?(?:(?: ?([a-z]{2,5}|' + fullTitleRegEx + '))(( ?)(?:\\+|-)\\15[0-9]{1,2}(?::?\\d{2})?)?)?\\b', 'giu');
+	timeRegex = new RegExp('\\b(?<![-:.,\'%\d$£€])(?:([01]?[0-9]|2[0-3])(:|\\.)?([0-5][0-9])?(:[0-5][0-9])?(?: ?([ap]\\.?m?\\.?))?( ?)(to|until|til|and|or|[-\u2010-\u2015])\\6)?([01]?[0-9]|2[0-3])(:|\\.)?([0-5][0-9])?(:[0-5][0-9])?(?: ?([ap]\\.?m?\\.?)(?= \\w|\\b))?(?:(?: ?([a-z]{2,5}|' + fullTitleRegEx + '))(( ?)(?:\\+|-)\\15[0-9]{1,2}(?::?\\d{2})?)?)?\\b', 'giu');
 	//[-|\\u{8211}|\\u{8212}|\\u{8213}]
-
-	timeRegexM = new RegExp('\\b(?:([01]?[0-9]|2[0-3])(:|\\.)?([0-5][0-9])?(:[0-5][0-9])?(?: ?([ap]\\.?m?\\.?))?( ?)(to|until|til|and|or|[-\u2010-\u2015])\\6)?([01]?[0-9]|2[0-3])(:|\\.)?([0-5][0-9])?(:[0-5][0-9])?(?: ?([ap]\\.?m?\\.?)(?= \\w|\\b))?(?:(?: ?(' + tzaolStr + '))(( ?)(?:\\+|-)\\15[0-9]{1,2}(?::?\\d{2})?)?)?\\b', 'giu');
+	//console.log(timeRegex)
+	//(?<![-:.,\'%\d$£€])
+	//(?<!-)
+	timeRegexM = new RegExp('\\b(?<![-:.,\'%\d$£€])(?:([01]?[0-9]|2[0-3])(:|\\.)?([0-5][0-9])?(:[0-5][0-9])?(?: ?([ap]\\.?m?\\.?))?( ?)(to|until|til|and|or|[-\u2010-\u2015])\\6)?([01]?[0-9]|2[0-3])(:|\\.)?([0-5][0-9])?(:[0-5][0-9])?(?: ?([ap]\\.?m?\\.?)(?= \\w|\\b))?(?:(?: ?(' + tzaolStr + '))(( ?)(?:\\+|-)\\15[0-9]{1,2}(?::?\\d{2})?)?)?\\b', 'giu');
 }
 
 function lookForTimes(node = document.body) {
@@ -887,11 +889,13 @@ function validateTime(match, str, upperTZ, usingManualTZ) {
 
 	//We need to change the start of the regex to... maybe (^|\s)
 	//The issue here is that : matches the word boundary, and if the input is "30:15 gmt" then it'll match "15 gmt"
+	/*
 	if (match.index && match.index > 0) {
 		// Avoid localising this time if the preceding character doesn't look or feel right
 		const prevChar = str.substr(match.index - 1, 1);
 		if (preceedingRegEx.test(prevChar)) { return false; }
 	}
+	*/
 
 	//Avoid matching font sizes
 	if (match[_G.tzAbr] === 'pt' && !(match[_G.meridiem] || match[_G.mins])) { return false; }
