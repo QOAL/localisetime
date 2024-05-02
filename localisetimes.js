@@ -929,6 +929,32 @@ function validateTime(match, str, upperTZ, usingManualTZ) {
 		if (match[_G.separator] === "." && match[_G.mins] && !match[_G.meridiem] && userSettings.avoidMatchingFloatsManually) { return false; }
 	}
 
+	// Avoid matching a year that could look like a time, followed by a separator and a time.
+	if (
+		match[_G.startHour] &&
+		match[_G.startHour].length === 2 &&
+		match[_G.startMins] &&
+		match[_G.timeSeparator] &&
+		!match[_G.startMeridiem] &&
+		!match[_G.startSeparator]
+	) {
+		const actualIndex = match.input.indexOf(
+			match[_G.hours] +
+			match[_G.separator] +
+			match[_G.mins]
+		)
+
+		const indexDiff = actualIndex - match.index
+
+		match.index = actualIndex
+
+		match[0] = match[0].substring(indexDiff)
+
+		match[_G.startHour] = undefined
+		match[_G.startMins] = undefined
+		match[_G.timeSeparator] = undefined
+	}
+
 	return true;
 }
 
