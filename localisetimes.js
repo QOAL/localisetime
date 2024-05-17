@@ -5,7 +5,12 @@ let observer;
 let dateTimeFormats = Array(2);
 
 const shortHandInfo = {"PT": "Pacific Time", "ET": "Eastern Time", "CT": "Central Time", "MT": "Mountain Time"};
-const shortHandCodes = Object.keys(shortHandInfo);
+const lazyCodes = [
+	"PT", "PDT", "PST",
+	"ET", "EDT", "EST",
+	"CT", "CDT", "CST",
+	"MT", "MDT", "MST",
+];
 const dstAlertMap = {};
 let haveCalculatedShortCodes = false;
 
@@ -625,7 +630,10 @@ function spotTime(str, correctedOffset) {
 			continue;
 		}
 
-		if (shortHandCodes.includes(upperTZ) && !haveCalculatedShortCodes) {
+		if (
+			!haveCalculatedShortCodes &&
+			lazyCodes.includes(upperTZ)
+		) {
 			workOutShortHandOffsets();
 		}
 
@@ -641,7 +649,10 @@ function spotTime(str, correctedOffset) {
 				if (shortHandInfo[shK].toLowerCase() === lcTZAbr) {
 					match[_G.tzAbr] = shK;
 					upperTZ = shK;
-					if (!haveCalculatedShortCodes) {
+					if (
+						!haveCalculatedShortCodes &&
+						lazyCodes.includes(upperTZ)
+					) {
 						workOutShortHandOffsets();
 					}
 					return true;
