@@ -925,6 +925,9 @@ function validateTime(match, str, upperTZ, usingManualTZ) {
 	//Avoid matching estimates that look like years
 	if (upperTZ === 'EST' && !(match[_G.meridiem] || match[_G.separator]) && parseInt(match[_G.hours] + match[_G.mins]) > 14) { return false; }
 
+	//Avoid matching denotations of bits (such as 8 bit)
+	if (upperTZ === 'BIT' && !(match[_G.meridiem] || match[_G.separator]) && !match[_G.mins]) { return false; }
+
 	//Avoid matching progressive resolutions
 	// Taking care to allow germans to shout, as long as the p is lowercase
 	if (match[_G.mins] && !match[_G.separator] && match[_G.meridiem] === 'p' && match[_G.tzAbr] !== 'IST') { return false; }
