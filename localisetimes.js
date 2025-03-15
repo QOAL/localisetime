@@ -144,7 +144,12 @@ function lookForTimes(node = document.body) {
 		//Avoid any existing times that have already been converted
 		if (node.parentElement.parentElement?.hasAttribute("data-localised")) { continue; }
 
-		if (node.parentElement.tagName === "SCRIPT") { continue }
+		if (
+			node.parentElement.tagName === "SCRIPT" ||
+			node.parentElement.tagName === "STYLE"
+		) {
+			continue;
+		}
 
 		if (isBBCWebsite &&
 			node.closest(['data-testid="timestamp"'])
@@ -232,7 +237,7 @@ function lookForTimes(node = document.body) {
 
 		})
 		//replace the old text node with our mangled one
-		node.parentElement.replaceChild(tmpFrag, node);
+		node.replaceWith(tmpFrag)
 	}
 }
 
