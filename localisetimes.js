@@ -440,6 +440,9 @@ function workOutShortHandOffsets() {
 }
 
 function init() {
+
+	if (!document.body) { return }
+
 	setPotentialManualTZ();
 
 	//Give the page a once over now it has loaded
