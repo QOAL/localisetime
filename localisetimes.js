@@ -52,6 +52,8 @@ const svgText = ["text", "tspan"];
 
 let haveInsertedStaticCSS = false;
 
+const isBBCWebsite = new URL(document.URL).hostname.includes(".bbc.")
+
 let clockEle;
 
 const dateObj = new Date();
@@ -143,6 +145,12 @@ function lookForTimes(node = document.body) {
 		if (node.parentElement.parentElement?.hasAttribute("data-localised")) { continue; }
 
 		if (node.parentElement.tagName === "SCRIPT") { continue }
+
+		if (isBBCWebsite &&
+			node.closest(['data-testid="timestamp"'])
+		) {
+			continue;
+		}
 
 		//Ignore any text nodes that are purely white space
 		if (node.nodeValue.trim().length === 0) { continue; }
