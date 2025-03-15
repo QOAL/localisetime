@@ -48,6 +48,11 @@ function patchWebExt(input, tzInfo) {
 	//Remove some unnecessary function calls
 	output = input.replace(/lookForTimes\(\);[\S\s]*function handleMutations/, "}}\nfunction isEnabled(){}\nfunction setPotentialManualTZ(){}\nfunction handleMutations")
 
+	//Remove document related checks
+	output = output
+			.replace('const isBBCWebsite = new URL(document.URL).hostname.includes(".bbc.")', '')
+			.replace('if (!document.body) { return }', '')
+
 	//Comment out the listener used by the web extension
 	output = output.replace("chrome.runtime.onMessage", "//chrome.runtime.onMessage")
 	output = `"use strict";\nconst chrome = { storage: { local: { get: () => {} } }, runtime: { getURL: () => {} }, i18n: { getMessage: () => {} } }
