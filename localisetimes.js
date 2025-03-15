@@ -142,6 +142,8 @@ function lookForTimes(node = document.body) {
 		//Avoid any existing times that have already been converted
 		if (node.parentElement.parentElement?.hasAttribute("data-localised")) { continue; }
 
+		if (node.parentElement.tagName === "SCRIPT") { continue }
+
 		//Ignore any text nodes that are purely white space
 		if (node.nodeValue.trim().length === 0) { continue; }
 
