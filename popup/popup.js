@@ -899,7 +899,7 @@ function selectThisOffset() {
 function ignoreThisAbbr() {
 	this.blur();
 
-	if (!userSettings.defaults[this.textContent]) { return }
+	if (!tzInfo[this.textContent]) { return }
 
 	this.classList.toggle("ignored");
 

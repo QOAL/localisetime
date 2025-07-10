@@ -128,15 +128,15 @@ function lookForTimes(node = document.body) {
 	if (!node) { return }
 
 	//Walk the dom looking for text nodes
-	var walker = document.createTreeWalker(node, NodeFilter.SHOW_TEXT);
+	const walker = document.createTreeWalker(node, NodeFilter.SHOW_TEXT);
 
-	var nodes = [];
+	const nodes = [];
 
 	while(walker.nextNode()) {
 		nodes.push(walker.currentNode);
 	}
 
-	for(var i = 0; node = nodes[i]; i++) {
+	for(let i = 0; node = nodes[i]; i++) {
 
 		// Don't interfere with contentEditable elements
 		if (node.isContentEditable || (node.parentElement && node.parentElement.isContentEditable)) { continue; }
