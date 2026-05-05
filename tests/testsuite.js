@@ -91,6 +91,7 @@ const tests = {
 		["2024-04-02 - 10AM GMT", ["11:00"]],
 		["Just a bit of padding text 2024 - 1:55 am PT", ["09:55"]],
 		["8BIT, 16 bit, 9pm BIT, 11:30 bit", ["10:00", "00:30"]],
+		["**** EMERGENCY MAINTENANCE 4/12/2026 @ 2000-2200MT ****", ["03:00 – 05:00"]],
 	],
 	"Etc/GMT+7": [
 		["5:30:15-7pm GMT", ["10:30:15 – 12:00"]],
